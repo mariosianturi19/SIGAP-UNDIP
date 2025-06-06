@@ -16,14 +16,21 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
-// Definisi interface untuk aktivitas
+// Definisi interface untuk aktivitas dan data hari ini
 interface Activity {
   id: string;
-  type: 'report' | 'alert';
+  type: 'report' | 'panic';
   title: string;
   description: string;
   timestamp: Date;
   icon: 'Image' | 'AlertTriangle';
+}
+
+interface TodayPanicData {
+  user_type: string;
+  today: string;
+  total_reports: number;
+  data: any[];
 }
 
 export default function VolunteerDashboard() {
@@ -31,7 +38,7 @@ export default function VolunteerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [reportCount, setReportCount] = useState<number>(0);
-  const [alertCount, setAlertCount] = useState<number>(3); // Data dummy untuk peringatan
+  const [todayPanicCount, setTodayPanicCount] = useState<number>(0);
   const [activities, setActivities] = useState<Activity[]>([]);
   const router = useRouter();
 
@@ -74,7 +81,32 @@ export default function VolunteerDashboard() {
         return;
       }
 
-      // Ambil jumlah laporan
+      // Ambil laporan panic hari ini
+      const todayPanicResponse = await fetch("/api/relawan/panic-reports/today", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (todayPanicResponse.ok) {
+        const todayPanicData: TodayPanicData = await todayPanicResponse.json();
+        setTodayPanicCount(todayPanicData.total_reports || 0);
+        
+        // Tambahkan aktivitas panic dari data hari ini
+        const panicActivities: Activity[] = todayPanicData.data?.slice(0, 3).map((panic: any) => ({
+          id: `panic-${panic.id}`,
+          type: 'panic',
+          title: "Peringatan darurat dipicu",
+          description: `Laporan panic #${panic.id} dari ${panic.user?.name || 'Pengguna'}`,
+          timestamp: new Date(panic.created_at),
+          icon: 'AlertTriangle'
+        })) || [];
+        
+        setActivities(panicActivities);
+      }
+
+      // Ambil jumlah laporan total
       const reportResponse = await fetch("/api/reports", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -86,19 +118,17 @@ export default function VolunteerDashboard() {
         const reportData = await reportResponse.json();
         let reports = [];
         
-        // Jika respons adalah objek dengan array 'data' (respons terpaginasi)
         if (reportData && reportData.data && Array.isArray(reportData.data)) {
           reports = reportData.data;
           setReportCount(reportData.total || reportData.data.length);
         } 
-        // Jika respons adalah array langsung
         else if (Array.isArray(reportData)) {
           reports = reportData;
           setReportCount(reportData.length);
         }
         
-        // Tambahkan aktivitas laporan
-        const reportActivities: Activity[] = reports.slice(0, 3).map((report: any) => ({
+        // Tambahkan beberapa aktivitas laporan
+        const reportActivities: Activity[] = reports.slice(0, 2).map((report: any) => ({
           id: `report-${report.id}`,
           type: 'report',
           title: "Laporan dikirim dengan foto",
@@ -107,28 +137,8 @@ export default function VolunteerDashboard() {
           icon: 'Image'
         }));
         
-        // Buat aktivitas peringatan darurat dummy
-        const alertActivities: Activity[] = [
-          {
-            id: 'alert-1',
-            type: 'alert',
-            title: "Peringatan darurat dipicu",
-            description: "Di Fakultas Teknik, respons cepat oleh tim",
-            timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 jam yang lalu
-            icon: 'AlertTriangle'
-          },
-          {
-            id: 'alert-2',
-            type: 'alert',
-            title: "Situasi darurat teratasi",
-            description: "Tim medis merespons di Gedung Sains",
-            timestamp: new Date(Date.now() - 9 * 60 * 60 * 1000), // 9 jam yang lalu
-            icon: 'AlertTriangle'
-          }
-        ];
-        
-        // Gabungkan semua aktivitas dan urutkan berdasarkan waktu (terbaru lebih dulu)
-        const allActivities = [...reportActivities, ...alertActivities]
+        // Gabungkan aktivitas panic dan laporan, urutkan berdasarkan waktu
+        const allActivities = [...activities, ...reportActivities]
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         
         setActivities(allActivities);
@@ -158,7 +168,7 @@ export default function VolunteerDashboard() {
     switch(type) {
       case 'report':
         return <Image size={16} className="text-green-600" />;
-      case 'alert':
+      case 'panic':
         return <AlertTriangle size={16} className="text-red-600" />;
       default:
         return <FileText size={16} />;
@@ -170,7 +180,7 @@ export default function VolunteerDashboard() {
     switch(type) {
       case 'report':
         return 'bg-green-100';
-      case 'alert':
+      case 'panic':
         return 'bg-red-100';
       default:
         return 'bg-gray-100';
@@ -191,7 +201,7 @@ export default function VolunteerDashboard() {
   };
 
   if (!isClient) {
-    return null; // Jangan mengembalikan apa pun selama rendering sisi server
+    return null;
   }
 
   if (isLoading) {
@@ -202,7 +212,6 @@ export default function VolunteerDashboard() {
     );
   }
 
-  // Konten ikhtisar dashboard relawan
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -230,6 +239,13 @@ export default function VolunteerDashboard() {
           className="flex space-x-2"
         >
           <Button 
+            onClick={() => router.push('/volunteer/panic-reports')}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Panic Hari Ini
+          </Button>
+          <Button 
             onClick={() => router.push('/volunteer/reports')}
             className="bg-blue-600 hover:bg-blue-700"
           >
@@ -242,6 +258,34 @@ export default function VolunteerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <motion.div 
           custom={0} 
+          initial="hidden" 
+          animate="visible" 
+          variants={cardVariants}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+        >
+          <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="pb-2 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-100">
+              <CardTitle className="text-red-900 flex items-center text-lg">
+                <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
+                Panic Hari Ini
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold text-gray-800">{todayPanicCount}</span>
+                  <span className="text-sm text-gray-500">Laporan darurat</span>
+                </div>
+                <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          custom={1} 
           initial="hidden" 
           animate="visible" 
           variants={cardVariants}
@@ -262,34 +306,6 @@ export default function VolunteerDashboard() {
                 </div>
                 <div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center">
                   <Image className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div 
-          custom={1} 
-          initial="hidden" 
-          animate="visible" 
-          variants={cardVariants}
-          whileHover={{ y: -5, transition: { duration: 0.2 } }}
-        >
-          <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-            <CardHeader className="pb-2 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-100">
-              <CardTitle className="text-red-900 flex items-center text-lg">
-                <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
-                Peringatan Darurat
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-3xl font-bold text-gray-800">{alertCount}</span>
-                  <span className="text-sm text-gray-500">Dalam 24 jam</span>
-                </div>
-                <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
@@ -355,6 +371,8 @@ export default function VolunteerDashboard() {
                       onClick={() => {
                         if (activity.type === 'report') {
                           router.push('/volunteer/reports');
+                        } else if (activity.type === 'panic') {
+                          router.push('/volunteer/panic-reports');
                         }
                       }}
                     >
@@ -395,12 +413,12 @@ export default function VolunteerDashboard() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600">1</span>
+                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-medium text-red-600">1</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Meninjau Laporan</p>
-                    <p className="text-xs text-gray-500 mt-1">Periksa dan update status laporan yang masuk</p>
+                    <p className="text-sm font-medium text-gray-800">Menangani Panic Button</p>
+                    <p className="text-xs text-gray-500 mt-1">Prioritas utama - respons cepat situasi darurat</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -408,33 +426,43 @@ export default function VolunteerDashboard() {
                     <span className="text-xs font-medium text-blue-600">2</span>
                   </div>
                   <div>
-                   <p className="text-sm font-medium text-gray-800">Merespons Darurat</p>
-                   <p className="text-xs text-gray-500 mt-1">Tanggap terhadap situasi darurat di kampus</p>
-                 </div>
-               </div>
-               <div className="flex items-start space-x-3">
-                 <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                   <span className="text-xs font-medium text-blue-600">3</span>
-                 </div>
-                 <div>
-                   <p className="text-sm font-medium text-gray-800">Koordinasi Tim</p>
-                   <p className="text-xs text-gray-500 mt-1">Berkoordinasi dengan tim keamanan kampus</p>
-                 </div>
-               </div>
-               <div className="mt-6">
-                 <Button 
-                   onClick={() => router.push('/volunteer/reports')}
-                   className="w-full bg-blue-600 hover:bg-blue-700"
-                   size="sm"
-                 >
-                   Mulai Bertugas
-                 </Button>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
-     </div>
-   </motion.div>
- );
+                    <p className="text-sm font-medium text-gray-800">Meninjau Laporan</p>
+                    <p className="text-xs text-gray-500 mt-1">Periksa dan update status laporan yang masuk</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-medium text-green-600">3</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Koordinasi Tim</p>
+                    <p className="text-xs text-gray-500 mt-1">Berkoordinasi dengan tim keamanan kampus</p>
+                  </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                  <Button 
+                    onClick={() => router.push('/volunteer/panic-reports')}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    size="sm"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Cek Panic Hari Ini
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/volunteer/reports')}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Kelola Laporan
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
 }

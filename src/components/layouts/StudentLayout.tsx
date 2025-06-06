@@ -78,6 +78,17 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
                 >
                   Laporan dengan Foto
                 </Link>
+
+                <Link
+                href="/student/history"
+                className={`px-3 py-2 rounded-md text-sm font-semibold transition-colors ${
+                  pathname === "/student/history"
+                    ? "bg-white/20 text-white"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                Histori Laporan
+              </Link>
               </div>
             </div>
             
@@ -134,6 +145,17 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
                     }`}
                   >
                     Laporan dengan Foto
+                  </Link>
+                  <Link
+                    href="/student/history"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`px-4 py-3 rounded-md text-sm font-semibold transition-colors ${
+                      pathname === "/student/history"
+                        ? "bg-white/20 text-white"
+                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    Histori Laporan
                   </Link>
                   <Button
                     variant="ghost"

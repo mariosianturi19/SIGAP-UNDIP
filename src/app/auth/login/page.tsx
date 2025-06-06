@@ -39,92 +39,67 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
-    setError(null);
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      // Validasi email untuk mahasiswa - harus menggunakan @students.undip.ac.id
-      if (data.email.endsWith('@students.undip.ac.id')) {
-        // Email mahasiswa - validasi passed
-      } else {
-        // Email non-mahasiswa - juga valid untuk admin/relawan
-      }
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+      }),
+    });
 
-      // Gunakan rute API lokal
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
+    const result = await response.json();
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Gagal masuk");
-      }
-
-      // Validasi tambahan: jika user role adalah "user" (mahasiswa), 
-      // pastikan emailnya menggunakan @students.undip.ac.id
-      if (result.user?.role === "user" && !data.email.endsWith('@students.undip.ac.id')) {
-        throw new Error("Akun mahasiswa harus menggunakan email @students.undip.ac.id");
-      }
-
-      // Simpan token di localStorage
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("refresh_token", result.refresh_token);
-
-      // Hitung dan simpan waktu kedaluwarsa
-      const expiresAt = Date.now() + result.expires_in * 1000;
-      localStorage.setItem("expires_at", expiresAt.toString());
-
-      // Simpan peran pengguna dan data - gunakan data dari hasil karena strukturnya mungkin berbeda
-      if (result.user) {
-        // Simpan peran pengguna - tergantung format respons API
-        if (result.user.role) {
-          localStorage.setItem("user_role", result.user.role);
-        }
-        
-        // Simpan seluruh objek pengguna
-        localStorage.setItem("user_data", JSON.stringify(result.user));
-      }
-
-      // Mendapatkan nama pengguna dari data respons untuk pesan toast
-      const userName = result.user?.name || "Pengguna";
-
-      toast.success(`Selamat datang kembali, ${userName}!`, {
-        description: "Anda telah berhasil masuk",
-      });
-
-      // Arahkan berdasarkan peran
-      const userRole = result.user?.role || "";
-      if (userRole === "user") {
-        router.push("/student/emergency");
-      } else {
-        router.push("/admin/dashboard");
-      }
-    } catch (error) {
-      console.error("Kesalahan login:", error);
-      setError(error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga");
-
-      // Picu animasi getaran pada bidang kesalahan pertama
-      const fieldErrors = form.formState.errors;
-      if (Object.keys(fieldErrors).length > 0) {
-        setShakeError(Object.keys(fieldErrors)[0]);
-        setTimeout(() => setShakeError(""), 500);
-      }
-
-      toast.error("Gagal masuk", {
-        description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga",
-      });
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      throw new Error(result.message || "Gagal masuk");
     }
-  };
+
+    // Save tokens
+    localStorage.setItem("access_token", result.access_token);
+    localStorage.setItem("refresh_token", result.refresh_token);
+    
+    const expiresAt = Date.now() + result.expires_in * 1000;
+    localStorage.setItem("expires_at", expiresAt.toString());
+
+    if (result.user) {
+      if (result.user.role) {
+        localStorage.setItem("user_role", result.user.role);
+      }
+      localStorage.setItem("user_data", JSON.stringify(result.user));
+    }
+
+    const userName = result.user?.name || "Pengguna";
+    toast.success(`Selamat datang kembali, ${userName}!`, {
+      description: "Anda telah berhasil masuk",
+    });
+
+    // Redirect based on role
+    const userRole = result.user?.role || "";
+    if (userRole === "user") {
+      router.push("/student/emergency");
+    } else if (userRole === "volunteer" || userRole === "relawan") {
+      router.push("/volunteer/dashboard");
+    } else if (userRole === "admin") {
+      router.push("/admin/dashboard");
+    } else {
+      router.push("/auth/login");
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    setError(error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga");
+    toast.error("Gagal masuk", {
+      description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="relative flex min-h-screen w-full">

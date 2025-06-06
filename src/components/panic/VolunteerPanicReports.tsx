@@ -32,12 +32,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 
 interface PanicUser {
-  [x: string]: any;
   id: number;
   name: string;
   email: string;
   no_telp: string;
   nik?: string;
+  nim?: string;
+  jurusan?: string;
 }
 
 interface PanicHandler {
@@ -54,6 +55,7 @@ interface PanicReport {
   status: string;
   handled_by?: number;
   handled_at?: string;
+  resolved_at?: string;
   created_at: string;
   updated_at: string;
   user: PanicUser;
@@ -61,74 +63,62 @@ interface PanicReport {
   resolved_by?: PanicHandler;
 }
 
-interface PanicReportsResponse {
-  current_page: number;
+// Response interface berdasarkan dokumentasi API
+interface TodayPanicResponse {
+  user_type: string;
+  today: string;
+  total_reports: number;
   data: PanicReport[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: any[];
-  next_page_url?: string;
-  path: string;
-  per_page: number;
-  prev_page_url?: string;
-  to: number;
-  total: number;
 }
 
 export default function VolunteerPanicReports() {
-  const [panicReports, setPanicReports] = useState<PanicReport[]>([]);
+  const [panicData, setPanicData] = useState<TodayPanicResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [handlingId, setHandlingId] = useState<number | null>(null);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [panicData, setPanicData] = useState<PanicReportsResponse | null>(null);
-
 
   useEffect(() => {
     fetchTodayPanicReports();
   }, []);
 
-
   const fetchTodayPanicReports = async () => {
-  setIsRefreshing(true);
-  
-  try {
-    const token = await getAccessToken();
-    if (!token) {
-      toast.error("Autentikasi diperlukan");
-      return;
-    }
+    setIsRefreshing(true);
+    
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("Autentikasi diperlukan");
+        return;
+      }
 
-    const response = await fetch("/api/relawan/panic-reports/today", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Gagal mengambil laporan panic: ${response.status}`);
+      const response = await fetch("/api/relawan/panic-reports/today", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gagal mengambil laporan panic: ${response.status}`);
+      }
+      
+      const data: TodayPanicResponse = await response.json();
+      console.log("Today panic reports data:", data);
+      
+      setPanicData(data);
+      
+    } catch (error) {
+      console.error("Error mengambil laporan panic:", error);
+      toast.error("Gagal memuat laporan panic");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-    
-    const data: PanicReportsResponse = await response.json();
-    console.log("Today panic reports data:", data);
-    
-    setPanicData(data);
-    
-  } catch (error) {
-    console.error("Error mengambil laporan panic:", error);
-    toast.error("Gagal memuat laporan panic");
-  } finally {
-    setIsLoading(false);
-    setIsRefreshing(false);
-  }
-};
-
+  };
 
   // Handle panic report
   const handlePanicReport = async (reportId: number) => {
@@ -251,11 +241,11 @@ export default function VolunteerPanicReports() {
   };
 
   // Filter reports
-  const filteredReports = panicReports.filter(report => 
+  const filteredReports = panicData?.data?.filter(report => 
     report.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     report.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     String(report.id).includes(searchQuery)
-  );
+  ) || [];
 
   // Open location in maps
   const openInMaps = (latitude: number, longitude: number) => {
@@ -274,6 +264,11 @@ export default function VolunteerPanicReports() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Laporan Panic Hari Ini</h1>
           <p className="text-gray-500 mt-1">Tangani laporan darurat yang masuk hari ini</p>
+          {panicData && (
+            <p className="text-sm text-gray-600 mt-1">
+              {panicData.today} - Total: {panicData.total_reports} laporan
+            </p>
+          )}
         </div>
         <Button
           onClick={fetchTodayPanicReports}
@@ -397,12 +392,22 @@ export default function VolunteerPanicReports() {
                             {report.handler && (
                               <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
                                 <span className="text-blue-700">Ditangani oleh: {report.handler.name}</span>
+                                {report.handled_at && (
+                                  <span className="text-blue-600 ml-2">
+                                    pada {formatDateTime(report.handled_at)}
+                                  </span>
+                                )}
                               </div>
                             )}
                             
                             {report.resolved_by && (
                               <div className="mt-3 p-2 bg-green-50 rounded text-sm">
                                 <span className="text-green-700">Diselesaikan oleh: {report.resolved_by.name}</span>
+                                {report.resolved_at && (
+                                  <span className="text-green-600 ml-2">
+                                    pada {formatDateTime(report.resolved_at)}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>

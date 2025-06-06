@@ -1,18 +1,17 @@
-// src/app/api/reports/[id]/route.ts
+// src/app/api/reports/[id]/route.ts (Update existing file)
 import { NextRequest, NextResponse } from "next/server";
-import { getAccessToken } from "@/lib/auth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get the access token
-    const token = await getAccessToken();
+    // Get authorization header from the request
+    const authHeader = request.headers.get("Authorization");
     
-    if (!token) {
+    if (!authHeader) {
       return NextResponse.json(
-        { message: "Authentication required" },
+        { message: "Authorization header is required" },
         { status: 401 }
       );
     }
@@ -20,11 +19,21 @@ export async function PATCH(
     // Get the request body
     const body = await request.json();
     
+    // Validate required fields
+    if (!body.status) {
+      return NextResponse.json(
+        { message: "Status is required" },
+        { status: 400 }
+      );
+    }
+
+    console.log(`Updating report ${params.id}:`, body);
+    
     // Forward the request to the external API
     const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${params.id}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": authHeader,
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
@@ -63,12 +72,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get the access token
-    const token = await getAccessToken();
+    // Get authorization header from the request
+    const authHeader = request.headers.get("Authorization");
     
-    if (!token) {
+    if (!authHeader) {
       return NextResponse.json(
-        { message: "Authentication required" },
+        { message: "Authorization header is required" },
         { status: 401 }
       );
     }
@@ -77,7 +86,7 @@ export async function GET(
     const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${params.id}`, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": authHeader,
         "Accept": "application/json",
       },
     });
@@ -104,6 +113,60 @@ export async function GET(
     console.error("Get report error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching the report" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE Report
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get authorization header from the request
+    const authHeader = request.headers.get("Authorization");
+    
+    if (!authHeader) {
+      return NextResponse.json(
+        { message: "Authorization header is required" },
+        { status: 401 }
+      );
+    }
+
+    console.log(`Deleting report ${params.id}`);
+    
+    // Forward the request to the external API
+    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${params.id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": authHeader,
+        "Accept": "application/json",
+      },
+    });
+
+    // Get the response as text first (for debugging)
+    const responseText = await response.text();
+    console.log(`Delete report ${params.id} response:`, responseText);
+    
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse delete report response as JSON:", e);
+      return NextResponse.json(
+        { message: "Invalid response from server" },
+        { status: 500 }
+      );
+    }
+
+    // Return the response with the same status
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error("Delete report error:", error);
+    return NextResponse.json(
+      { message: "An error occurred while deleting the report" },
       { status: 500 }
     );
   }

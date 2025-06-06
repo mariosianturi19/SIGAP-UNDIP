@@ -10,16 +10,17 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect berdasarkan status autentikasi
     if (isAuthenticated()) {
       const role = getUserRole();
       
       if (role === "user") {
         router.push("/student/emergency");
-      } else if (role === "volunteer") {
+      } else if (role === "volunteer" || role === "relawan") {
         router.push("/volunteer/dashboard");
-      } else {
+      } else if (role === "admin") {
         router.push("/admin/dashboard");
+      } else {
+        router.push("/auth/login");
       }
     } else {
       router.push("/auth/login");

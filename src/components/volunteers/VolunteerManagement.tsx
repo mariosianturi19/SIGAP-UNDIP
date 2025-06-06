@@ -64,26 +64,44 @@ export default function VolunteerManagement() {
         return;
       }
 
-      const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/admin/relawan", {
+      console.log("=== FETCHING VOLUNTEERS ===");
+      console.log("Token (first 20 chars):", token.substring(0, 20) + "...");
+
+      const response = await fetch("/api/volunteer", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
       
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      console.log("Response text (first 500 chars):", responseText.substring(0, 500));
+      
       if (!response.ok) {
-        throw new Error(`Gagal mengambil data relawan: ${response.status}`);
+        throw new Error(`Gagal mengambil data relawan: ${response.status} - ${responseText}`);
       }
       
-      const data = await response.json();
-      console.log("Data relawan:", data);
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        throw new Error("Response bukan JSON yang valid: " + responseText.substring(0, 100));
+      }
       
-      // Tangani data berdasarkan struktur respons API
+      console.log("Parsed data:", data);
+      
+      // Handle data based on structure
       const volunteersData = Array.isArray(data) ? data : data.data || [];
       setVolunteers(volunteersData);
+      
+      console.log("=== VOLUNTEERS LOADED ===", volunteersData.length, "volunteers");
     } catch (error) {
-      console.error("Error mengambil data relawan:", error);
-      toast.error("Gagal memuat data relawan");
+      console.error("=== FETCH VOLUNTEERS ERROR ===", error);
+      toast.error("Gagal memuat data relawan: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

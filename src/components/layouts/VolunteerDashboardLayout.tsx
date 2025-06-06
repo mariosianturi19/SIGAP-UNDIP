@@ -9,7 +9,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { 
   FileText, 
-  ChevronLeft,
   LogOut, 
   PieChart,
   Shield,
@@ -177,7 +176,7 @@ export default function VolunteerDashboardLayout({ children }: VolunteerDashboar
                         <item.icon className={`w-5 h-5 ${isItemActive ? 'text-blue-600' : 'group-hover:text-blue-600'}`} />
                         {isItemActive && (
                           <motion.div
-                            layoutId="activeIndicator"
+                            layoutId="activeIndicatorVolunteer"
                             className="absolute -left-1 -right-1 -top-1 -bottom-1 rounded-md bg-blue-100/50 -z-10"
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                           />
@@ -229,51 +228,51 @@ export default function VolunteerDashboardLayout({ children }: VolunteerDashboar
             </div>
             <div className="flex items-center space-x-4">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border border-gray-200">
-                      <AvatarImage
-                        src={userData?.avatar_url || ""}
-                        alt={userData?.name || "Relawan"}
-                      />
-                      <AvatarFallback>{userData?.name ? getInitials(userData.name) : "RL"}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" sideOffset={5}>
-                  <DropdownMenuLabel>Akun Relawan</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {userData && (
-                    <>
-                      <div className="px-2 py-1.5">
-                        <p className="text-sm font-medium">{userData.name}</p>
-                        <p className="text-xs text-gray-500">{userData.email}</p>
-                        <div className="flex items-center mt-1">
-                          <Shield className="h-3 w-3 text-green-600 mr-1" />
-                          <span className="text-xs text-green-600 font-medium">Relawan</span>
-                        </div>
-                      </div>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log Out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                   <Avatar className="h-10 w-10 border border-gray-200">
+                     <AvatarImage
+                       src={userData?.avatar_url || ""}
+                       alt={userData?.name || "Relawan"}
+                     />
+                     <AvatarFallback>{userData?.name ? getInitials(userData.name) : "RL"}</AvatarFallback>
+                   </Avatar>
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent className="w-56" align="end" sideOffset={5}>
+                 <DropdownMenuLabel>Akun Relawan</DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 {userData && (
+                   <>
+                     <div className="px-2 py-1.5">
+                       <p className="text-sm font-medium">{userData.name}</p>
+                       <p className="text-xs text-gray-500">{userData.email}</p>
+                       <div className="flex items-center mt-1">
+                         <Shield className="h-3 w-3 text-green-600 mr-1" />
+                         <span className="text-xs text-green-600 font-medium">Relawan</span>
+                       </div>
+                     </div>
+                     <DropdownMenuSeparator />
+                   </>
+                 )}
+                 <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
+                   <LogOut className="mr-2 h-4 w-4" />
+                   <span>Log Out</span>
+                 </DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
+           </div>
+         </header>
 
-          {/* Konten */}
-          <main className="flex-1 overflow-auto p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-      
-      {/* Footer */}
-      <Footer />
-    </div>
-  );
+         {/* Konten */}
+         <main className="flex-1 overflow-auto p-6">
+           {children}
+         </main>
+       </div>
+     </div>
+     
+     {/* Footer */}
+     <Footer />
+   </div>
+ );
 }
