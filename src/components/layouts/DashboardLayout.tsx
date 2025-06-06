@@ -18,7 +18,8 @@ import {
   PieChart,
   BarChart3,
   Search,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,13 +103,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return pathname === path;
   };
 
-  // Menu items - Update paths
   const menuItems = [
   { icon: PieChart, label: "Dashboard", path: "/admin/dashboard" },
   { icon: Users, label: "Relawan", path: "/admin/volunteers" },
   { icon: FileText, label: "Laporan", path: "/admin/reports" },
   { icon: AlertTriangle, label: "Panic Reports", path: "/admin/panic-reports" },
-  ];
+  { icon: Calendar, label: "Manajemen Shift", path: "/admin/shift-management" },  
+];
 
   return (
     <div className="flex min-h-screen bg-gray-50 flex-col">

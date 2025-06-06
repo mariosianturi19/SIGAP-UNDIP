@@ -1,4 +1,4 @@
-// src/app/api/relawan/panic-reports/today/route.ts
+// src/app/api/admin/shifts/weekly-patterns/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -12,23 +12,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const page = searchParams.get('page') || '1';
-    const status = searchParams.get('status') || '';
+    console.log("Fetching weekly patterns");
     
-    // Build query string for external API
-    let queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    
-    if (status) {
-      queryParams.append('status', status);
-    }
-
-    const apiUrl = `https://sigap-api-5hk6r.ondigitalocean.app/api/panic/today?${queryParams.toString()}`;
-    console.log("Fetching today panic reports from:", apiUrl);
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/admin/shifts/weekly-patterns", {
       method: "GET",
       headers: {
         "Authorization": authHeader,
@@ -37,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("Get today panic reports response:", responseText);
+    console.log("Weekly patterns response:", responseText);
     
     let data;
     try {
@@ -52,9 +38,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Get today panic reports error:", error);
+    console.error("Get weekly patterns error:", error);
     return NextResponse.json(
-      { message: "An error occurred while fetching today's panic reports" },
+      { message: "An error occurred while fetching weekly patterns" },
       { status: 500 }
     );
   }
