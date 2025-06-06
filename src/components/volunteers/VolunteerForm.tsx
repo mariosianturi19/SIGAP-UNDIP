@@ -144,7 +144,7 @@ export default function VolunteerForm({
         
         console.log("Submitting volunteer data:", { ...apiData, password: "[HIDDEN]" });
         
-        response = await fetch("/api/volunteers", {
+        response = await fetch("/api/volunteer", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -154,7 +154,7 @@ export default function VolunteerForm({
         });
       } else {
         // For edit mode
-        response = await fetch(`/api/volunteers/${volunteer?.id}`, {
+        response = await fetch(`/api/volunteer/${volunteer?.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
