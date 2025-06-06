@@ -12,7 +12,8 @@ import {
   LogOut, 
   PieChart,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -100,6 +101,7 @@ export default function VolunteerDashboardLayout({ children }: VolunteerDashboar
     { icon: PieChart, label: "Dashboard", path: "/volunteer/dashboard" },
     { icon: FileText, label: "Laporan", path: "/volunteer/reports" },
     { icon: AlertTriangle, label: "Panic Hari Ini", path: "/volunteer/panic-reports" },
+    { icon: Calendar, label: "Jadwal Saya", path: "/volunteer/my-shifts" },
   ];
 
   return (

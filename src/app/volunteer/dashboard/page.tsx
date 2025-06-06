@@ -1,9 +1,8 @@
-// src/app/volunteer/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { getUserRole, getAccessToken, getUserData } from "@/lib/auth";
-import { Loader2, FileText, AlertTriangle, TrendingUp, Shield, CheckCircle, Clock, Image, User } from "lucide-react";
+import { Loader2, FileText, AlertTriangle, TrendingUp, Shield, CheckCircle, Clock, Image, User, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,22 +14,17 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import type { MyShiftsResponse } from "@/types/shift";
+import type { TodayPanicReportsResponse } from "@/types/panic";
 
 // Definisi interface untuk aktivitas dan data hari ini
 interface Activity {
   id: string;
-  type: 'report' | 'panic';
+  type: 'report' | 'panic' | 'shift';
   title: string;
   description: string;
   timestamp: Date;
-  icon: 'Image' | 'AlertTriangle';
-}
-
-interface TodayPanicData {
-  user_type: string;
-  today: string;
-  total_reports: number;
-  data: any[];
+  icon: 'Image' | 'AlertTriangle' | 'Calendar';
 }
 
 export default function VolunteerDashboard() {
@@ -39,6 +33,7 @@ export default function VolunteerDashboard() {
   const [isClient, setIsClient] = useState(false);
   const [reportCount, setReportCount] = useState<number>(0);
   const [todayPanicCount, setTodayPanicCount] = useState<number>(0);
+  const [myShiftsData, setMyShiftsData] = useState<MyShiftsResponse | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const router = useRouter();
 
@@ -90,7 +85,7 @@ export default function VolunteerDashboard() {
       });
       
       if (todayPanicResponse.ok) {
-        const todayPanicData: TodayPanicData = await todayPanicResponse.json();
+        const todayPanicData: TodayPanicReportsResponse = await todayPanicResponse.json();
         setTodayPanicCount(todayPanicData.total_reports || 0);
         
         // Tambahkan aktivitas panic dari data hari ini
@@ -104,6 +99,32 @@ export default function VolunteerDashboard() {
         })) || [];
         
         setActivities(panicActivities);
+      }
+
+      // Ambil data shift saya
+      const myShiftsResponse = await fetch("/api/relawan/my-shifts", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (myShiftsResponse.ok) {
+        const shiftsData: MyShiftsResponse = await myShiftsResponse.json();
+        setMyShiftsData(shiftsData);
+        
+        // Tambahkan aktivitas shift mendatang
+        const shiftActivities: Activity[] = shiftsData.upcoming_shifts?.slice(0, 2).map((shift: any) => ({
+          id: `shift-${shift.shift_id}`,
+          type: 'shift',
+          title: "Shift mendatang",
+          description: `Bertugas pada ${shift.day_name}, ${shift.date_formatted}`,
+          timestamp: new Date(shift.date),
+          icon: 'Calendar'
+        })) || [];
+        
+        // Gabungkan aktivitas
+        setActivities(prev => [...prev, ...shiftActivities].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       }
 
       // Ambil jumlah laporan total
@@ -138,10 +159,8 @@ export default function VolunteerDashboard() {
         }));
         
         // Gabungkan aktivitas panic dan laporan, urutkan berdasarkan waktu
-        const allActivities = [...activities, ...reportActivities]
-          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        
-        setActivities(allActivities);
+        setActivities(prev => [...prev, ...reportActivities]
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       }
 
       setIsLoading(false);
@@ -170,6 +189,8 @@ export default function VolunteerDashboard() {
         return <Image size={16} className="text-green-600" />;
       case 'panic':
         return <AlertTriangle size={16} className="text-red-600" />;
+      case 'shift':
+        return <Calendar size={16} className="text-blue-600" />;
       default:
         return <FileText size={16} />;
     }
@@ -182,6 +203,8 @@ export default function VolunteerDashboard() {
         return 'bg-green-100';
       case 'panic':
         return 'bg-red-100';
+      case 'shift':
+        return 'bg-blue-100';
       default:
         return 'bg-gray-100';
     }
@@ -229,6 +252,11 @@ export default function VolunteerDashboard() {
           <div className="flex items-center mt-2">
             <Shield className="h-4 w-4 text-green-600 mr-2" />
             <span className="text-sm text-green-600 font-medium">Status: Relawan Aktif</span>
+            {myShiftsData?.today_status?.is_on_duty && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                Bertugas Hari Ini
+              </span>
+            )}
           </div>
         </motion.div>
         
@@ -246,16 +274,16 @@ export default function VolunteerDashboard() {
             Panic Hari Ini
           </Button>
           <Button 
-            onClick={() => router.push('/volunteer/reports')}
+            onClick={() => router.push('/volunteer/my-shifts')}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            <FileText className="h-4 w-4 mr-2" />
-            Lihat Laporan
+            <Calendar className="h-4 w-4 mr-2" />
+            Jadwal Saya
           </Button>
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div 
           custom={0} 
           initial="hidden" 
@@ -322,7 +350,37 @@ export default function VolunteerDashboard() {
           <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100">
               <CardTitle className="text-blue-900 flex items-center text-lg">
-                <Shield className="h-5 w-5 mr-2 text-blue-600" />
+                <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                Jadwal Minggu Ini
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold text-gray-800">
+                    {myShiftsData?.summary?.total_scheduled_days || 0}
+                  </span>
+                  <span className="text-sm text-gray-500">Hari bertugas</span>
+                </div>
+                <div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          custom={3} 
+          initial="hidden" 
+          animate="visible" 
+          variants={cardVariants}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+        >
+          <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="pb-2 bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-100">
+              <CardTitle className="text-purple-900 flex items-center text-lg">
+                <Shield className="h-5 w-5 mr-2 text-purple-600" />
                 Status Relawan
               </CardTitle>
             </CardHeader>
@@ -333,10 +391,12 @@ export default function VolunteerDashboard() {
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                     <span className="text-lg font-bold text-gray-800">Aktif</span>
                   </div>
-                  <span className="text-sm text-gray-500">Siap bertugas</span>
+                  <span className="text-sm text-gray-500">
+                    {myShiftsData?.today_status?.is_on_duty ? "Bertugas hari ini" : "Siap bertugas"}
+                  </span>
                 </div>
-                <div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-blue-600" />
+                <div className="h-12 w-12 bg-purple-50 rounded-full flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -361,7 +421,7 @@ export default function VolunteerDashboard() {
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
                 {activities.length > 0 ? (
-                  activities.map((activity, index) => (
+                  activities.slice(0, 5).map((activity, index) => (
                     <motion.div
                       key={activity.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -373,6 +433,8 @@ export default function VolunteerDashboard() {
                           router.push('/volunteer/reports');
                         } else if (activity.type === 'panic') {
                           router.push('/volunteer/panic-reports');
+                        } else if (activity.type === 'shift') {
+                          router.push('/volunteer/my-shifts');
                         }
                       }}
                     >
@@ -405,41 +467,72 @@ export default function VolunteerDashboard() {
         >
           <Card className="border border-gray-200 shadow-sm h-full">
             <CardHeader className="pb-2 border-b">
-              <CardTitle className="text-xl font-bold text-gray-800">Tugas Relawan</CardTitle>
+              <CardTitle className="text-xl font-bold text-gray-800">Jadwal & Tugas</CardTitle>
               <CardDescription>
-                Panduan tugas sebagai relawan
+                Status jadwal dan tugas relawan hari ini
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-red-600">1</span>
+                {/* Today Status */}
+                {myShiftsData?.today_status && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-blue-900">Status Hari Ini</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        myShiftsData.today_status.is_on_duty 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {myShiftsData.today_status.is_on_duty ? 'Bertugas' : 'Libur'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-700">
+                      {myShiftsData.today_status.day_name}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Menangani Panic Button</p>
-                    <p className="text-xs text-gray-500 mt-1">Prioritas utama - respons cepat situasi darurat</p>
+                )}
+
+                {/* Weekly Summary */}
+                {myShiftsData?.summary && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Ringkasan Minggu Ini</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Hari bertugas:</span>
+                        <span className="font-medium">{myShiftsData.summary.total_scheduled_days} hari</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Persentase:</span>
+                        <span className="font-medium">{myShiftsData.summary.work_days_this_week}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600">2</span>
+                )}
+
+                {/* Upcoming Shifts */}
+                {myShiftsData?.upcoming_shifts && myShiftsData.upcoming_shifts.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Shift Mendatang</h4>
+                    <div className="space-y-2">
+                      {myShiftsData.upcoming_shifts.slice(0, 3).map((shift) => (
+                        <div 
+                          key={shift.date}
+                          className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-700">{shift.day_name}</span>
+                          </div>
+                          <span className="text-xs text-gray-500">{shift.date_formatted}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Meninjau Laporan</p>
-                    <p className="text-xs text-gray-500 mt-1">Periksa dan update status laporan yang masuk</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-green-600">3</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Koordinasi Tim</p>
-                    <p className="text-xs text-gray-500 mt-1">Berkoordinasi dengan tim keamanan kampus</p>
-                  </div>
-                </div>
-                <div className="mt-6 space-y-2">
+                )}
+
+                {/* Quick Actions */}
+                <div className="space-y-2 pt-4 border-t">
                   <Button 
                     onClick={() => router.push('/volunteer/panic-reports')}
                     className="w-full bg-red-600 hover:bg-red-700"
@@ -447,6 +540,15 @@ export default function VolunteerDashboard() {
                   >
                     <AlertTriangle className="h-4 w-4 mr-2" />
                     Cek Panic Hari Ini
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/volunteer/my-shifts')}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Lihat Jadwal Lengkap
                   </Button>
                   <Button 
                     onClick={() => router.push('/volunteer/reports')}

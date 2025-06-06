@@ -118,6 +118,13 @@ export default function TodayPanicReports() {
         return;
       }
 
+      // Only allow 'handling' or 'resolved' for UpdatePanicStatusRequest
+      if (status !== 'handling' && status !== 'resolved') {
+        toast.error("Status tidak valid untuk pembaruan");
+        setIsUpdating(false);
+        return;
+      }
+
       const requestData: UpdatePanicStatusRequest = {
         status,
         ...(notes && { notes })

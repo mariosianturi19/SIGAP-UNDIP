@@ -1,4 +1,4 @@
-// src/types/panic.ts
+// src/types/panic.ts (Update/Replace existing file)
 export interface PanicUser {
   id: number;
   name: string;
@@ -37,7 +37,7 @@ export interface TodayPanicReportsResponse {
 }
 
 export interface UpdatePanicStatusRequest {
-  status: string;
+  status: 'handling' | 'resolved';
   notes?: string;
 }
 
@@ -49,31 +49,10 @@ export interface UpdatePanicStatusResponse {
   updated_by: string;
 }
 
-export interface MyShift {
-  id: number;
-  relawan_id: number;
-  day_of_week: string;
-  start_time: string;
-  end_time: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MyShiftsResponse {
-  success: boolean;
-  shifts: MyShift[];
-  current_week: {
-    start_date: string;
-    end_date: string;
-  };
-}
-
 export const PANIC_STATUS_OPTIONS = [
   { value: "pending", label: "Menunggu", color: "bg-yellow-100 text-yellow-800" },
   { value: "handling", label: "Sedang Ditangani", color: "bg-blue-100 text-blue-800" },
   { value: "resolved", label: "Diselesaikan", color: "bg-green-100 text-green-800" },
-  { value: "cancelled", label: "Dibatalkan", color: "bg-gray-100 text-gray-800" },
 ] as const;
 
 export type PanicStatus = typeof PANIC_STATUS_OPTIONS[number]['value'];
