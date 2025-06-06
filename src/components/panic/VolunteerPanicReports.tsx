@@ -98,8 +98,7 @@ export default function VolunteerPanicReports() {
       setPanicData(data);
       
     } catch (error) {
-      console.error("Error mengambil laporan panic hari ini:", error);
-      toast.error("Gagal memuat laporan panic hari ini");
+      toast.error("Anda Tidak memiliki akses untuk melihat laporan panic hari ini");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

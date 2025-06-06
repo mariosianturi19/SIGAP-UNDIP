@@ -76,6 +76,9 @@ export default function VolunteerDashboard() {
         return;
       }
 
+      // Temporary activities array to collect all activities
+      let allActivities: Activity[] = [];
+
       // Ambil laporan panic hari ini
       const todayPanicResponse = await fetch("/api/relawan/panic-reports/today", {
         headers: {
@@ -88,9 +91,9 @@ export default function VolunteerDashboard() {
         const todayPanicData: TodayPanicReportsResponse = await todayPanicResponse.json();
         setTodayPanicCount(todayPanicData.total_reports || 0);
         
-        // Tambahkan aktivitas panic dari data hari ini
-        const panicActivities: Activity[] = todayPanicData.data?.slice(0, 3).map((panic: any) => ({
-          id: `panic-${panic.id}`,
+        // Tambahkan aktivitas panic dari data hari ini dengan unique IDs
+        const panicActivities: Activity[] = todayPanicData.data?.slice(0, 3).map((panic: any, index: number) => ({
+          id: `panic-${panic.id}-${panic.created_at}-${index}`, // More unique ID
           type: 'panic',
           title: "Peringatan darurat dipicu",
           description: `Laporan panic #${panic.id} dari ${panic.user?.name || 'Pengguna'}`,
@@ -98,7 +101,7 @@ export default function VolunteerDashboard() {
           icon: 'AlertTriangle'
         })) || [];
         
-        setActivities(panicActivities);
+        allActivities = [...allActivities, ...panicActivities];
       }
 
       // Ambil data shift saya
@@ -113,9 +116,9 @@ export default function VolunteerDashboard() {
         const shiftsData: MyShiftsResponse = await myShiftsResponse.json();
         setMyShiftsData(shiftsData);
         
-        // Tambahkan aktivitas shift mendatang
-        const shiftActivities: Activity[] = shiftsData.upcoming_shifts?.slice(0, 2).map((shift: any) => ({
-          id: `shift-${shift.shift_id}`,
+        // Tambahkan aktivitas shift mendatang dengan unique IDs
+        const shiftActivities: Activity[] = shiftsData.upcoming_shifts?.slice(0, 2).map((shift: any, index: number) => ({
+          id: `shift-${shift.shift_id || shift.date}-${index}`, // Use shift_id or date + index for uniqueness
           type: 'shift',
           title: "Shift mendatang",
           description: `Bertugas pada ${shift.day_name}, ${shift.date_formatted}`,
@@ -123,8 +126,7 @@ export default function VolunteerDashboard() {
           icon: 'Calendar'
         })) || [];
         
-        // Gabungkan aktivitas
-        setActivities(prev => [...prev, ...shiftActivities].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+        allActivities = [...allActivities, ...shiftActivities];
       }
 
       // Ambil jumlah laporan total
@@ -148,9 +150,9 @@ export default function VolunteerDashboard() {
           setReportCount(reportData.length);
         }
         
-        // Tambahkan beberapa aktivitas laporan
-        const reportActivities: Activity[] = reports.slice(0, 2).map((report: any) => ({
-          id: `report-${report.id}`,
+        // Tambahkan beberapa aktivitas laporan dengan unique IDs
+        const reportActivities: Activity[] = reports.slice(0, 2).map((report: any, index: number) => ({
+          id: `report-${report.id}-${report.created_at}-${index}`, // More unique ID
           type: 'report',
           title: "Laporan dikirim dengan foto",
           description: `Di ${report.location}, masalah ${report.problem_type} dilaporkan`,
@@ -158,11 +160,18 @@ export default function VolunteerDashboard() {
           icon: 'Image'
         }));
         
-        // Gabungkan aktivitas panic dan laporan, urutkan berdasarkan waktu
-        setActivities(prev => [...prev, ...reportActivities]
-          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+        allActivities = [...allActivities, ...reportActivities];
       }
 
+      // Sort all activities by timestamp and remove any potential duplicates
+      const uniqueActivities = allActivities
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .filter((activity, index, array) => 
+          // Remove duplicates based on id
+          array.findIndex(item => item.id === activity.id) === index
+        );
+
+      setActivities(uniqueActivities);
       setIsLoading(false);
     } catch (error) {
       console.error("Error mengambil data:", error);
@@ -423,7 +432,7 @@ export default function VolunteerDashboard() {
                 {activities.length > 0 ? (
                   activities.slice(0, 5).map((activity, index) => (
                     <motion.div
-                      key={activity.id}
+                      key={activity.id} // Use the unique activity.id instead of index
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
@@ -515,9 +524,9 @@ export default function VolunteerDashboard() {
                   <div className="space-y-3">
                     <h4 className="font-medium text-gray-900">Shift Mendatang</h4>
                     <div className="space-y-2">
-                      {myShiftsData.upcoming_shifts.slice(0, 3).map((shift) => (
+                      {myShiftsData.upcoming_shifts.slice(0, 3).map((shift, index) => (
                         <div 
-                          key={shift.date}
+                          key={`upcoming-shift-${shift.date}-${index}`} // Use more unique key
                           className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                         >
                           <div className="flex items-center">
