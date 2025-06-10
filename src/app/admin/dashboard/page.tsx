@@ -124,26 +124,7 @@ export default function Dashboard() {
    };
  }, [router]);
 
- const setupAutoRefresh = useCallback(() => {
-   // Clear existing interval jika ada
-   if (refreshIntervalRef.current) {
-     clearInterval(refreshIntervalRef.current);
-   }
-   
-   // Setup interval baru untuk refresh setiap 1 menit (60000ms)
-   refreshIntervalRef.current = setInterval(() => {
-     console.log("🔄 Auto-refreshing dashboard data...");
-     fetchDashboardData(true); // true = silent refresh
-   }, 30000);
-   
-   console.log("✅ Auto-refresh setup complete - refreshing every 1 minute");
- }, []);
-
- const fetchDashboardData = useCallback(async (silentRefresh = false) => {
-   if (!silentRefresh) {
-     setIsRefreshing(true);
-   }
-   
+ const fetchDashboardData = async () => {
    try {
      const token = await getAccessToken();
      if (!token) {
@@ -441,20 +422,6 @@ export default function Dashboard() {
            </p>
          )}
        </motion.div>
-       
-       <Button
-         onClick={handleManualRefresh}
-         variant="outline"
-         className="border-gray-200"
-         disabled={isRefreshing}
-       >
-         {isRefreshing ? (
-           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-         ) : (
-           <RefreshCw className="h-4 w-4 mr-2" />
-         )}
-         Refresh
-       </Button>
      </div>
 
      {/* Main Stats Cards */}
