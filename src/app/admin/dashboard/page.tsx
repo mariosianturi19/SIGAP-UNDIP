@@ -111,10 +111,10 @@ export default function Dashboard() {
    }
    
    // Initial data fetch
-   fetchDashboardData();
+   fetchDashboardData(false);
    
    // Setup auto-refresh setiap 1 menit
-   setupAutoRefresh();
+   setLastRefresh(new Date());
    
    // Cleanup interval saat component unmount
    return () => {
@@ -124,7 +124,7 @@ export default function Dashboard() {
    };
  }, [router]);
 
- const fetchDashboardData = async () => {
+ const fetchDashboardData = async (silentRefresh: boolean = false) => {
    try {
      const token = await getAccessToken();
      if (!token) {
@@ -264,7 +264,7 @@ export default function Dashboard() {
        setIsRefreshing(false);
      }
    }
- }, []);
+ };
 
  // Function untuk check data baru dan tampilkan notifikasi
  const checkForNewData = useCallback((previousData: DashboardData, newData: DashboardData) => {
@@ -327,7 +327,7 @@ export default function Dashboard() {
  // Manual refresh function
  const handleManualRefresh = useCallback(() => {
    console.log("🔄 Manual refresh triggered");
-   fetchDashboardData();
+   fetchDashboardData(false);
  }, [fetchDashboardData]);
 
  // Helper functions
