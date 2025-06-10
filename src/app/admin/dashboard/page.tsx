@@ -1,9 +1,9 @@
 // src/app/admin/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getUserRole, getAccessToken, getUserData } from "@/lib/auth";
-import { Loader2, Users, FileText, AlertTriangle, MapPin, Clock, ExternalLink, Shield, User } from "lucide-react";
+import { Loader2, Users, FileText, AlertTriangle, MapPin, Clock, ExternalLink, Shield, User, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,20 +59,36 @@ interface PanicAlert {
  created_at: string;
 }
 
+// Interface untuk data dashboard
+interface DashboardData {
+ volunteerCount: number;
+ reportCount: number;
+ alertCount: number;
+ recentVolunteers: Volunteer[];
+ recentReports: Report[];
+ recentAlerts: PanicAlert[];
+}
+
 export default function Dashboard() {
  const [role, setRole] = useState<string | null>(null);
  const [isLoading, setIsLoading] = useState(true);
  const [isClient, setIsClient] = useState(false);
+ const [isRefreshing, setIsRefreshing] = useState(false);
+ const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
  
- // Counts
- const [volunteerCount, setVolunteerCount] = useState<number>(0);
- const [reportCount, setReportCount] = useState<number>(0);
- const [alertCount, setAlertCount] = useState<number>(0);
- 
- // Recent data
- const [recentVolunteers, setRecentVolunteers] = useState<Volunteer[]>([]);
- const [recentReports, setRecentReports] = useState<Report[]>([]);
- const [recentAlerts, setRecentAlerts] = useState<PanicAlert[]>([]);
+ // Dashboard data state
+ const [dashboardData, setDashboardData] = useState<DashboardData>({
+   volunteerCount: 0,
+   reportCount: 0,
+   alertCount: 0,
+   recentVolunteers: [],
+   recentReports: [],
+   recentAlerts: []
+ });
+
+ // Previous data untuk comparison (untuk deteksi data baru)
+ const previousDataRef = useRef<DashboardData | null>(null);
+ const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
  
  const router = useRouter();
 
@@ -94,16 +110,55 @@ export default function Dashboard() {
      sessionStorage.setItem("welcome_toast_shown", "true");
    }
    
+   // Initial data fetch
    fetchDashboardData();
+   
+   // Setup auto-refresh setiap 1 menit
+   setupAutoRefresh();
+   
+   // Cleanup interval saat component unmount
+   return () => {
+     if (refreshIntervalRef.current) {
+       clearInterval(refreshIntervalRef.current);
+     }
+   };
  }, [router]);
 
- const fetchDashboardData = async () => {
+ const setupAutoRefresh = useCallback(() => {
+   // Clear existing interval jika ada
+   if (refreshIntervalRef.current) {
+     clearInterval(refreshIntervalRef.current);
+   }
+   
+   // Setup interval baru untuk refresh setiap 1 menit (60000ms)
+   refreshIntervalRef.current = setInterval(() => {
+     console.log("🔄 Auto-refreshing dashboard data...");
+     fetchDashboardData(true); // true = silent refresh
+   }, 60000);
+   
+   console.log("✅ Auto-refresh setup complete - refreshing every 1 minute");
+ }, []);
+
+ const fetchDashboardData = useCallback(async (silentRefresh = false) => {
+   if (!silentRefresh) {
+     setIsRefreshing(true);
+   }
+   
    try {
      const token = await getAccessToken();
      if (!token) {
        throw new Error("Autentikasi diperlukan");
        return;
      }
+
+     const newData: DashboardData = {
+       volunteerCount: 0,
+       reportCount: 0,
+       alertCount: 0,
+       recentVolunteers: [],
+       recentReports: [],
+       recentAlerts: []
+     };
 
      // Fetch Volunteers
      try {
@@ -117,8 +172,10 @@ export default function Dashboard() {
        if (volunteerResponse.ok) {
          const volunteerData = await volunteerResponse.json();
          const volunteers = Array.isArray(volunteerData) ? volunteerData : volunteerData.data || [];
-         setVolunteerCount(volunteers.length);
-         setRecentVolunteers(volunteers.slice(0, 5)); // 5 relawan terbaru
+         newData.volunteerCount = volunteers.length;
+         newData.recentVolunteers = volunteers
+           .sort((a: Volunteer, b: Volunteer) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+           .slice(0, 5);
        }
      } catch (error) {
        console.log("Volunteers endpoint not available");
@@ -143,8 +200,10 @@ export default function Dashboard() {
            reports = reportData;
          }
          
-         setReportCount(reports.length);
-         setRecentReports(reports.slice(0, 5)); // 5 laporan terbaru
+         newData.reportCount = reports.length;
+         newData.recentReports = reports
+           .sort((a: Report, b: Report) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+           .slice(0, 5);
        }
      } catch (error) {
        console.log("Reports endpoint not available");
@@ -169,12 +228,14 @@ export default function Dashboard() {
            alerts = panicData;
          }
          
-         setAlertCount(alerts.length);
-         setRecentAlerts(alerts.slice(0, 5)); // 5 alert terbaru
+         newData.alertCount = alerts.length;
+         newData.recentAlerts = alerts
+           .sort((a: PanicAlert, b: PanicAlert) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+           .slice(0, 5);
        }
      } catch (error) {
        console.log("Panic endpoint not available, using dummy data");
-       setAlertCount(15); // Dummy data seperti di gambar
+       newData.alertCount = 15;
        // Create dummy recent alerts
        const dummyAlerts: PanicAlert[] = [
          {
@@ -183,7 +244,7 @@ export default function Dashboard() {
            latitude: -7.048366904927,
            longitude: 110.4347081661,
            status: "pending",
-           created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() // 1 hour ago
+           created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
          },
          {
            id: 2,
@@ -191,19 +252,102 @@ export default function Dashboard() {
            latitude: -7.048368719172,
            longitude: 110.4347097622,
            status: "handled",
-           created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+           created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
          }
        ];
-       setRecentAlerts(dummyAlerts);
+       newData.recentAlerts = dummyAlerts;
      }
 
-     setIsLoading(false);
+     // Check for new data dan tampilkan notifikasi jika ada
+     if (previousDataRef.current && silentRefresh) {
+       checkForNewData(previousDataRef.current, newData);
+     }
+
+     // Update state
+     setDashboardData(newData);
+     previousDataRef.current = newData;
+     setLastRefresh(new Date());
+     
+     if (!silentRefresh) {
+       setIsLoading(false);
+     }
+     
    } catch (error) {
      console.error("Error mengambil data:", error);
-     toast.error("Gagal memuat data dashboard");
-     setIsLoading(false);
+     if (!silentRefresh) {
+       toast.error("Gagal memuat data dashboard");
+       setIsLoading(false);
+     }
+   } finally {
+     if (!silentRefresh) {
+       setIsRefreshing(false);
+     }
    }
- };
+ }, []);
+
+ // Function untuk check data baru dan tampilkan notifikasi
+ const checkForNewData = useCallback((previousData: DashboardData, newData: DashboardData) => {
+   // Check for new reports
+   const newReports = newData.recentReports.filter(newReport => 
+     !previousData.recentReports.some(oldReport => oldReport.id === newReport.id)
+   );
+
+   // Check for new panic alerts
+   const newAlerts = newData.recentAlerts.filter(newAlert => 
+     !previousData.recentAlerts.some(oldAlert => oldAlert.id === newAlert.id)
+   );
+
+   // Check for new volunteers
+   const newVolunteers = newData.recentVolunteers.filter(newVolunteer => 
+     !previousData.recentVolunteers.some(oldVolunteer => oldVolunteer.id === newVolunteer.id)
+   );
+
+   // Show notifications for new data
+   if (newReports.length > 0) {
+     toast.info(`${newReports.length} Laporan Baru`, {
+       description: `${newReports.length} laporan baru telah masuk ke sistem`,
+       action: {
+         label: "Lihat",
+         onClick: () => router.push("/admin/reports")
+       }
+     });
+   }
+
+   if (newAlerts.length > 0) {
+     toast.warning(`${newAlerts.length} Panic Alert Baru`, {
+       description: `${newAlerts.length} panic alert baru memerlukan perhatian`,
+       action: {
+         label: "Lihat",
+         onClick: () => router.push("/admin/panic-reports")
+       }
+     });
+   }
+
+   if (newVolunteers.length > 0) {
+     toast.success(`${newVolunteers.length} Relawan Baru`, {
+       description: `${newVolunteers.length} relawan baru telah bergabung`,
+       action: {
+         label: "Lihat",
+         onClick: () => router.push("/admin/volunteers")
+       }
+     });
+   }
+
+   // Log untuk debugging
+   if (newReports.length > 0 || newAlerts.length > 0 || newVolunteers.length > 0) {
+     console.log("🔔 New data detected:", {
+       newReports: newReports.length,
+       newAlerts: newAlerts.length,
+       newVolunteers: newVolunteers.length
+     });
+   }
+ }, [router]);
+
+ // Manual refresh function
+ const handleManualRefresh = useCallback(() => {
+   console.log("🔄 Manual refresh triggered");
+   fetchDashboardData();
+ }, [fetchDashboardData]);
 
  // Helper functions
  const formatTimeAgo = (date: string) => {
@@ -290,7 +434,27 @@ export default function Dashboard() {
        >
          <h1 className="text-2xl font-bold text-gray-800">Dashboard Admin</h1>
          <p className="text-gray-500 mt-1">Ringkasan sistem SIGAP UNDIP</p>
+         {lastRefresh && (
+           <p className="text-xs text-gray-400 mt-1 flex items-center">
+             <Clock className="h-3 w-3 mr-1" />
+             Terakhir diperbarui: {lastRefresh.toLocaleTimeString('id-ID')}
+           </p>
+         )}
        </motion.div>
+       
+       <Button
+         onClick={handleManualRefresh}
+         variant="outline"
+         className="border-gray-200"
+         disabled={isRefreshing}
+       >
+         {isRefreshing ? (
+           <Loader2 className="h-4 w-4 animate-spin mr-2" />
+         ) : (
+           <RefreshCw className="h-4 w-4 mr-2" />
+         )}
+         Segarkan Manual
+       </Button>
      </div>
 
      {/* Main Stats Cards */}
@@ -312,7 +476,7 @@ export default function Dashboard() {
            <CardContent className="pt-6">
              <div className="flex items-center justify-between">
                <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{volunteerCount}</span>
+                 <span className="text-3xl font-bold text-gray-800">{dashboardData.volunteerCount}</span>
                  <span className="text-sm text-gray-500">Relawan aktif</span>
                </div>
                <div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center">
@@ -340,7 +504,7 @@ export default function Dashboard() {
            <CardContent className="pt-6">
              <div className="flex items-center justify-between">
                <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{reportCount}</span>
+                 <span className="text-3xl font-bold text-gray-800">{dashboardData.reportCount}</span>
                  <span className="text-sm text-gray-500">Semua laporan</span>
                </div>
                <div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center">
@@ -368,7 +532,7 @@ export default function Dashboard() {
            <CardContent className="pt-6">
              <div className="flex items-center justify-between">
                <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{alertCount}</span>
+                 <span className="text-3xl font-bold text-gray-800">{dashboardData.alertCount}</span>
                  <span className="text-sm text-gray-500">Alert darurat</span>
                </div>
                <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center">
@@ -395,13 +559,13 @@ export default function Dashboard() {
                Relawan Terbaru
              </CardTitle>
              <CardDescription>
-               {recentVolunteers.length} relawan terakhir yang bergabung
+               {dashboardData.recentVolunteers.length} relawan terakhir yang bergabung
              </CardDescription>
            </CardHeader>
            <CardContent className="p-0">
              <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {recentVolunteers.length > 0 ? (
-                 recentVolunteers.map((volunteer, index) => (
+               {dashboardData.recentVolunteers.length > 0 ? (
+                 dashboardData.recentVolunteers.map((volunteer, index) => (
                    <motion.div
                      key={volunteer.id}
                      initial={{ opacity: 0, y: 10 }}
@@ -434,7 +598,7 @@ export default function Dashboard() {
                    <p>Tidak ada relawan terbaru</p>
                  </div>
                )}
-               {recentVolunteers.length > 0 && (
+               {dashboardData.recentVolunteers.length > 0 && (
                  <div className="p-4 text-center border-t">
                    <Button
                      variant="outline"
@@ -464,13 +628,13 @@ export default function Dashboard() {
                Laporan Terbaru
              </CardTitle>
              <CardDescription>
-               {recentReports.length} laporan terakhir yang masuk
+               {dashboardData.recentReports.length} laporan terakhir yang masuk
              </CardDescription>
            </CardHeader>
            <CardContent className="p-0">
              <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {recentReports.length > 0 ? (
-                 recentReports.map((report, index) => (
+               {dashboardData.recentReports.length > 0 ? (
+                 dashboardData.recentReports.map((report, index) => (
                    <motion.div
                      key={report.id}
                      initial={{ opacity: 0, y: 10 }}
@@ -509,7 +673,7 @@ export default function Dashboard() {
                    <p>Tidak ada laporan terbaru</p>
                  </div>
                )}
-               {recentReports.length > 0 && (
+               {dashboardData.recentReports.length > 0 && (
                  <div className="p-4 text-center border-t">
                    <Button
                      variant="outline"
@@ -539,13 +703,13 @@ export default function Dashboard() {
                Panic Alerts Terbaru
              </CardTitle>
              <CardDescription>
-               {recentAlerts.length} alert darurat terbaru
+               {dashboardData.recentAlerts.length} alert darurat terbaru
              </CardDescription>
            </CardHeader>
            <CardContent className="p-0">
              <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {recentAlerts.length > 0 ? (
-                 recentAlerts.map((alert, index) => (
+               {dashboardData.recentAlerts.length > 0 ? (
+                 dashboardData.recentAlerts.map((alert, index) => (
                    <motion.div
                      key={alert.id}
                      initial={{ opacity: 0, y: 10 }}
@@ -587,7 +751,7 @@ export default function Dashboard() {
                    <p>Tidak ada alert darurat terbaru</p>
                  </div>
                )}
-               {recentAlerts.length > 0 && (
+               {dashboardData.recentAlerts.length > 0 && (
                  <div className="p-4 text-center border-t">
                    <Button
                      variant="outline"
@@ -603,6 +767,16 @@ export default function Dashboard() {
            </CardContent>
          </Card>
        </motion.div>
+     </div>
+
+     {/* Auto-refresh indicator */}
+     <div className="fixed bottom-4 right-4 z-50">
+       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex items-center space-x-2">
+         <div className="flex items-center space-x-2">
+           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+           <span className="text-xs text-gray-600">Auto-refresh aktif</span>
+         </div>
+       </div>
      </div>
    </motion.div>
  );
