@@ -25,7 +25,10 @@ import {
  SlidersHorizontal,
  Edit,
  Trash2,
- Save
+ Save,
+ Zap,
+ TrendingUp,
+ Activity
 } from "lucide-react";
 import { getAccessToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -343,29 +346,29 @@ export default function ReportList() {
    const statusMap: { [key: string]: {text: string, color: string, icon: React.ReactNode} } = {
      'pending': {
        text: "Menunggu",
-       color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+       color: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800",
        icon: <Clock className="h-3.5 w-3.5 mr-1" />
      },
      'in_progress': {
        text: "Dalam Proses",
-       color: "bg-blue-100 text-blue-800 border-blue-300",
+       color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
        icon: <Info className="h-3.5 w-3.5 mr-1" />
      },
      'resolved': {
        text: "Diselesaikan",
-       color: "bg-green-100 text-green-800 border-green-300",
+       color: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
        icon: <CheckCircle className="h-3.5 w-3.5 mr-1" />
      },
      'rejected': {
        text: "Ditolak",
-       color: "bg-red-100 text-red-800 border-red-300",
+       color: "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
        icon: <XCircle className="h-3.5 w-3.5 mr-1" />
      }
    };
    
    return statusMap[status] || {
      text: status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-     color: "bg-gray-100 text-gray-800 border-gray-300",
+     color: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800",
      icon: <AlertCircle className="h-3.5 w-3.5 mr-1" />
    };
  };
@@ -510,102 +513,208 @@ export default function ReportList() {
  }
 
  return (
-   <div className="space-y-6">
+   <div className="space-y-4 sm:space-y-6 transition-theme">
+     {/* Simplified Header with Dark Mode */}
      <motion.div 
        initial={{ opacity: 0, y: -20 }}
        animate={{ opacity: 1, y: 0 }}
-       transition={{ duration: 0.3 }}
-       className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+       transition={{ duration: 0.5 }}
+       className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-theme"
      >
-       <div>
-         <h1 className="text-2xl font-bold text-gray-800">Laporan</h1>
-         <p className="text-gray-500 mt-1">Lihat dan kelola laporan yang dikirim oleh Mahasiswa</p>
+       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+         <div>
+           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+             Laporan Mahasiswa
+           </h1>
+           <p className="text-gray-600 dark:text-gray-300">
+             Kelola dan pantau semua laporan yang dikirim oleh mahasiswa
+           </p>
+           <div className="flex items-center space-x-4 mt-3">
+             <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+               <span>Total: {reports.length} laporan</span>
+             </div>
+             <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+               <Activity className="w-4 h-4" />
+               <span>Live Updates</span>
+             </div>
+           </div>
+         </div>
+         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+           <Button
+             onClick={handleRefresh}
+             className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
+             disabled={isRefreshing}
+             size="sm"
+           >
+             {isRefreshing ? (
+               <Loader2 className="h-4 w-4 animate-spin mr-2" />
+             ) : (
+               <RefreshCw className="h-4 w-4 mr-2" />
+             )}
+             Refresh Data
+           </Button>
+         </div>
        </div>
-       <Button
-         onClick={handleRefresh}
-         variant="outline"
-         className="border-gray-200"
-         disabled={isRefreshing}
-       >
-         {isRefreshing ? (
-           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-         ) : (
-           <RefreshCw className="h-4 w-4 mr-2" />
-         )}
-         Segarkan
-       </Button>
      </motion.div>
 
+     {/* Simplified Stats Cards with Dark Mode */}
      <motion.div
        initial={{ opacity: 0, y: 20 }}
        animate={{ opacity: 1, y: 0 }}
-       transition={{ duration: 0.4 }}
+       transition={{ duration: 0.5, delay: 0.1 }}
+       className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
      >
-       <Card className="border border-gray-200 shadow-sm">
-         <CardHeader className="pb-3 border-b">
-           <CardTitle className="text-xl font-bold text-gray-800">Filter</CardTitle>
-           <CardDescription>
-             Filter dan cari laporan
-           </CardDescription>
+       {[
+         { 
+           label: "Total Laporan", 
+           value: reports.length, 
+           icon: FileText, 
+           color: "text-blue-600 dark:text-blue-400",
+           bg: "bg-blue-50 dark:bg-blue-900/20"
+         },
+         { 
+           label: "Menunggu", 
+           value: reports.filter(r => r.status === 'pending').length, 
+           icon: Clock, 
+           color: "text-amber-600 dark:text-amber-400",
+           bg: "bg-amber-50 dark:bg-amber-900/20"
+         },
+         { 
+           label: "Dalam Proses", 
+           value: reports.filter(r => r.status === 'in_progress').length, 
+           icon: Zap, 
+           color: "text-purple-600 dark:text-purple-400",
+           bg: "bg-purple-50 dark:bg-purple-900/20"
+         },
+         { 
+           label: "Selesai", 
+           value: reports.filter(r => r.status === 'resolved').length, 
+           icon: CheckCircle, 
+           color: "text-green-600 dark:text-green-400",
+           bg: "bg-green-50 dark:bg-green-900/20"
+         }
+       ].map((stat, index) => (
+         <div
+           key={stat.label}
+           className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300"
+         >
+           <div className="flex items-center justify-between">
+             <div>
+               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{stat.label}</p>
+               <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+             </div>
+             <div className={`p-2 rounded-lg ${stat.bg}`}>
+               <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+             </div>
+           </div>
+         </div>
+       ))}
+     </motion.div>
+
+     {/* Simplified Filters with Dark Mode */}
+     <motion.div
+       initial={{ opacity: 0, y: 20 }}
+       animate={{ opacity: 1, y: 0 }}
+       transition={{ duration: 0.5, delay: 0.2 }}
+     >
+       <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm transition-theme">
+         <CardHeader className="pb-3 border-b border-gray-200 dark:border-gray-700">
+           <div className="flex items-center space-x-3">
+             <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+               <SlidersHorizontal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+             </div>
+             <div>
+               <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Filter & Pencarian</CardTitle>
+               <CardDescription className="text-gray-600 dark:text-gray-400">
+                 Temukan laporan dengan mudah
+               </CardDescription>
+             </div>
+           </div>
          </CardHeader>
          <CardContent className="p-4">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <div className="relative">
-               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-               <Input
-                 placeholder="Cari laporan..."
-                 className="pl-10 border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
+             <div>
+               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pencarian</label>
+               <div className="relative">
+                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
+                 <Input
+                   placeholder="Cari berdasarkan deskripsi, lokasi, atau nama..."
+                   className="pl-10 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+               </div>
+             </div>
+             
+             <div>
+               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+               <Select
+                 value={statusFilter}
+                 onValueChange={setStatusFilter}
+                 options={statusOptions}
+                 className="border-gray-300 dark:border-gray-600"
                />
              </div>
              
-             <Select
-               value={statusFilter}
-               onValueChange={setStatusFilter}
-               options={statusOptions}
-               className="border-gray-200"
-             />
-             
-             <Select
-               value={typeFilter}
-               onValueChange={setTypeFilter}
-               options={problemTypeOptions}
-               className="border-gray-200"
-             />
+             <div>
+               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jenis Masalah</label>
+               <Select
+                 value={typeFilter}
+                 onValueChange={setTypeFilter}
+                 options={problemTypeOptions}
+                 className="border-gray-300 dark:border-gray-600"
+               />
+             </div>
            </div>
          </CardContent>
        </Card>
      </motion.div>
 
+     {/* Simplified Reports Table with Dark Mode */}
      <motion.div
        initial={{ opacity: 0, y: 20 }}
        animate={{ opacity: 1, y: 0 }}
-       transition={{ duration: 0.5 }}
+       transition={{ duration: 0.5, delay: 0.3 }}
      >
-       <Card className="border border-gray-200 shadow-sm">
-         <CardHeader className="pb-3 border-b">
-           <CardTitle className="text-xl font-bold text-gray-800">Daftar Laporan</CardTitle>
+       <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm transition-theme">
+         <CardHeader className="pb-3 border-b border-gray-200 dark:border-gray-700">
+           <div className="flex items-center justify-between">
+             <div className="flex items-center space-x-3">
+               <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+                 <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+               </div>
+               <div>
+                 <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Daftar Laporan</CardTitle>
+                 <p className="text-sm text-gray-600 dark:text-gray-400">{filteredReports.length} laporan ditemukan</p>
+               </div>
+             </div>
+             <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+               <TrendingUp className="w-3 h-3 mr-1" />
+               Live
+             </Badge>
+           </div>
          </CardHeader>
          <CardContent className="p-0">
            {isLoading ? (
-             <div className="flex justify-center items-center p-12">
-               <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+             <div className="flex flex-col justify-center items-center p-8 sm:p-12 space-y-3">
+               <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-blue-600 dark:text-blue-400" />
+               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Memuat laporan...</p>
              </div>
            ) : filteredReports.length === 0 ? (
              <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
-               className="text-center p-12"
+               className="text-center p-8 sm:p-12"
              >
-               <div className="flex flex-col items-center justify-center">
-                 <div className="rounded-full bg-gray-100 p-4 mb-4">
-                   <FileText className="h-8 w-8 text-gray-400" />
+               <div className="flex flex-col items-center space-y-4">
+                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                   <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" />
                  </div>
                  {searchQuery || statusFilter !== "all" || typeFilter !== "all" ? (
-                   <>
-                     <h3 className="text-lg font-medium text-gray-800 mb-1">Tidak ada laporan yang cocok</h3>
-                     <p className="text-gray-500 mb-4">Coba ubah kriteria pencarian atau filter Anda</p>
+                   <div className="space-y-3">
+                     <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Tidak ada laporan yang cocok</h3>
+                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Coba ubah kriteria pencarian atau filter</p>
                      <Button 
                        variant="outline" 
                        onClick={() => {
@@ -613,170 +722,171 @@ export default function ReportList() {
                          setStatusFilter('all');
                          setTypeFilter('all');
                        }}
-                       className="border-gray-200"
+                       className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
+                       size="sm"
                      >
-                       Hapus filter
+                       <X className="w-4 h-4 mr-2" />
+                       Hapus Filter
                      </Button>
-                   </>
+                   </div>
                  ) : (
-                   <>
-                     <h3 className="text-lg font-medium text-gray-800 mb-1">Tidak ada laporan ditemukan</h3>
-                     <p className="text-gray-500 mb-4">Saat ini tidak ada laporan dalam sistem</p>
+                   <div className="space-y-3">
+                     <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Belum ada laporan</h3>
+                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Laporan baru akan muncul di sini secara otomatis</p>
                      <Button 
                        variant="outline"
                        onClick={handleRefresh}
-                       className="border-gray-200"
+                       className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
+                       size="sm"
                      >
                        <RefreshCw className="h-4 w-4 mr-2" />
-                       Segarkan
+                       Periksa Ulang
                      </Button>
-                   </>
+                   </div>
                  )}
                </div>
              </motion.div>
            ) : (
              <div className="overflow-x-auto">
                <table className="w-full">
-                 <thead className="bg-gray-50 text-gray-700 text-sm">
+                 <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                    <tr>
-                     <th className="px-4 py-3 text-left">
+                     <th className="px-3 sm:px-4 py-3 text-left">
                        <button
-                         className="flex items-center font-medium"
+                         className="flex items-center text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                          onClick={() => handleSort('date')}
                        >
                          Tanggal
                          {getSortIcon('date')}
                        </button>
                      </th>
-                     <th className="px-4 py-3 text-left">
-                       <span className="font-medium">Pelapor</span>
-                     </th>
-                     <th className="px-4 py-3 text-left">
+                     <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Pelapor</th>
+                     <th className="px-3 sm:px-4 py-3 text-left">
                        <button
-                         className="flex items-center font-medium"
+                         className="flex items-center text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                          onClick={() => handleSort('location')}
                        >
                          Lokasi
                          {getSortIcon('location')}
                        </button>
                      </th>
-                     <th className="px-4 py-3 text-left">
+                     <th className="px-3 sm:px-4 py-3 text-left">
                        <button
-                         className="flex items-center font-medium"
+                         className="flex items-center text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                          onClick={() => handleSort('type')}
                        >
                          Jenis Masalah
                          {getSortIcon('type')}
                        </button>
                      </th>
-                     <th className="px-4 py-3 text-left">
+                     <th className="px-3 sm:px-4 py-3 text-left">
                        <button
-                         className="flex items-center font-medium"
+                         className="flex items-center text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                          onClick={() => handleSort('status')}
                        >
                          Status
                          {getSortIcon('status')}
                        </button>
                      </th>
-                     <th className="px-4 py-3 text-right">Tindakan</th>
+                     <th className="px-3 sm:px-4 py-3 text-right text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Aksi</th>
                    </tr>
                  </thead>
                  <motion.tbody
                    variants={containerVariants}
                    initial="hidden"
                    animate="visible"
-                   className="divide-y divide-gray-100"
+                   className="divide-y divide-gray-200 dark:divide-gray-700"
                  >
-                   {filteredReports.map((report) => {
+                   {filteredReports.map((report, index) => {
                      const status = getStatusBadge(report.status);
                      return (
                        <motion.tr 
                          key={report.id}
                          variants={itemVariants}
-                         className="hover:bg-gray-50 transition-colors"
+                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                        >
-                         <td className="px-4 py-3 whitespace-nowrap">
-                           <div className="flex flex-col">
-                             <div className="text-sm font-medium text-gray-900">
+                         <td className="px-3 sm:px-4 py-3 sm:py-4">
+                           <div className="space-y-1">
+                             <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                                {formatDate(report.created_at)}
                              </div>
-                             <div className="text-xs text-gray-500 flex items-center">
+                             <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                                <Clock className="h-3 w-3 mr-1" />
                                {formatTime(report.created_at)}
                              </div>
                            </div>
                          </td>
-                         <td className="px-4 py-3 whitespace-nowrap">
-                           <div className="flex items-center">
-                             <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                               <span className="text-blue-600 font-medium">
+                         <td className="px-3 sm:px-4 py-3 sm:py-4">
+                           <div className="flex items-center space-x-2 sm:space-x-3">
+                             <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
+                               <span className="text-white font-medium text-xs sm:text-sm">
                                  {report.user?.name ? report.user.name.charAt(0).toUpperCase() : "U"}
                                </span>
                              </div>
-                             <div className="ml-3">
-                               <div className="text-sm font-medium text-gray-900">{report.user?.name}</div>
-                               <div className="text-xs text-gray-500">{report.user?.nim || report.user?.email}</div>
+                             <div className="min-w-0">
+                               <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">{report.user?.name}</div>
+                               <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{report.user?.nim || report.user?.email}</div>
                              </div>
                            </div>
                          </td>
-                         <td className="px-4 py-3">
-                           <div className="flex items-center text-sm text-gray-600">
-                             <MapPin className="h-4 w-4 text-gray-400 mr-1.5 flex-shrink-0" />
-                             <span className="truncate max-w-[180px]">{report.location}</span>
+                         <td className="px-3 sm:px-4 py-3 sm:py-4">
+                           <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                             <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 mr-1 sm:mr-2" />
+                             <span className="truncate max-w-[120px] sm:max-w-[180px]">{report.location}</span>
                            </div>
                          </td>
-                         <td className="px-4 py-3 whitespace-nowrap">
-                           <Badge variant="outline" className="capitalize font-normal">
+                         <td className="px-3 sm:px-4 py-3 sm:py-4">
+                           <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                              {formatProblemType(report.problem_type)}
                            </Badge>
                          </td>
-                         <td className="px-4 py-3 whitespace-nowrap">
-                           <Badge className={`flex items-center px-2 py-1 ${status.color} font-normal border`}>
+                         <td className="px-3 sm:px-4 py-3 sm:py-4">
+                           <Badge className={`flex items-center text-xs ${status.color}`}>
                              {status.icon}
-                             <span>{status.text}</span>
+                             <span className="ml-1">{status.text}</span>
                            </Badge>
                          </td>
-                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                           <div className="flex justify-end items-center space-x-2">
+                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-right">
+                           <div className="flex justify-end items-center space-x-1 sm:space-x-2">
                              <Button
                                variant="ghost"
                                size="sm"
-                               className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8"
+                               className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs sm:text-sm h-7 sm:h-8"
                                onClick={() => handleViewReport(report)}
                              >
-                               <ExternalLink className="h-4 w-4 mr-1" />
-                               Lihat
+                               <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                               <span className="hidden sm:inline">Kelola</span>
                              </Button>
                              <DropdownMenu>
                                <DropdownMenuTrigger asChild>
-                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                   <MoreHorizontal className="h-4 w-4" />
+                                 <Button variant="ghost" size="sm" className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                   <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
                                  </Button>
                                </DropdownMenuTrigger>
-                               <DropdownMenuContent align="end" className="w-48">
-                                 <DropdownMenuItem onClick={() => handleViewReport(report)} className="cursor-pointer">
-                                   <Edit className="h-4 w-4 mr-2 text-blue-600" />
+                               <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                 <DropdownMenuItem onClick={() => handleViewReport(report)} className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                   <Edit className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                                    <span>Edit & Update</span>
                                  </DropdownMenuItem>
                                  <DropdownMenuItem 
                                    onClick={() => handleQuickStatusUpdate(report.id, 'in_progress', 'Laporan sedang dalam proses penanganan')} 
-                                   className="cursor-pointer"
+                                   className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                                    disabled={report.status === 'in_progress' || report.status === 'resolved'}
                                  >
-                                   <Info className="h-4 w-4 mr-2 text-blue-600" />
+                                   <Info className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                                    <span>Tandai Dalam Proses</span>
                                  </DropdownMenuItem>
                                  <DropdownMenuItem 
                                    onClick={() => handleQuickStatusUpdate(report.id, 'resolved', 'Laporan telah diselesaikan')} 
-                                   className="cursor-pointer"
+                                   className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                                    disabled={report.status === 'resolved'}
                                  >
-                                   <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                                   <CheckCircle className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
                                    <span>Tandai Selesai</span>
                                  </DropdownMenuItem>
-                                 <DropdownMenuSeparator />
-                                 <DropdownMenuItem onClick={() => handleDeleteClick(report)} className="cursor-pointer text-red-600">
-                                   <Trash2 className="h-4 w-4 mr-2 text-red-600" />
+                                 <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+                                 <DropdownMenuItem onClick={() => handleDeleteClick(report)} className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                   <Trash2 className="h-4 w-4 mr-2 text-red-600 dark:text-red-400" />
                                    <span>Hapus Laporan</span>
                                  </DropdownMenuItem>
                                </DropdownMenuContent>
@@ -784,7 +894,7 @@ export default function ReportList() {
                            </div>
                          </td>
                        </motion.tr>
-                       );
+                     );
                    })}
                  </motion.tbody>
                </table>
@@ -794,223 +904,231 @@ export default function ReportList() {
        </Card>
      </motion.div>
 
-     {/* Modal Detail dan Update Laporan */}
+     {/* Simplified Detail Modal with Dark Mode */}
      <AnimatePresence>
        {isDetailOpen && selectedReport && (
          <motion.div 
-           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
+           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
            initial={{ opacity: 0 }}
            animate={{ opacity: 1 }}
            exit={{ opacity: 0 }}
            onClick={() => setIsDetailOpen(false)}
          >
            <motion.div 
-             className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto"
+             className="bg-white dark:bg-gray-900 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto shadow-lg border border-gray-200 dark:border-gray-700"
              variants={detailVariants}
              initial="hidden"
              animate="visible"
              exit="exit"
              onClick={(e) => e.stopPropagation()}
            >
-             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-               <h2 className="text-xl font-bold text-gray-800">Kelola Laporan #{selectedReport.id}</h2>
-               <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)}>
+             <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+               <div>
+                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Kelola Laporan #{selectedReport.id}</h2>
+                 <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Detail lengkap dan update status laporan</p>
+               </div>
+               <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)} className="hover:bg-gray-100 dark:hover:bg-gray-800">
                  <X className="h-5 w-5" />
                </Button>
              </div>
              
              <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-               <div className="lg:col-span-2">
-                 <h3 className="text-lg font-semibold text-gray-700 mb-4">Detail Laporan</h3>
-                 
-                 <div className="space-y-4">
-                   <div>
-                     <p className="text-sm font-medium text-gray-500">Status Saat Ini</p>
-                     <Badge className={`mt-1 ${getStatusBadge(selectedReport.status).color} px-2.5 py-1 text-xs font-normal border flex items-center w-fit`}>
-                       {getStatusBadge(selectedReport.status).icon}
-                       <span>{getStatusBadge(selectedReport.status).text}</span>
-                     </Badge>
-                   </div>
+               <div className="lg:col-span-2 space-y-6">
+                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detail Laporan</h3>
                    
-                   <div>
-                     <p className="text-sm font-medium text-gray-500">Dikirim pada</p>
-                     <p className="text-sm text-gray-900 mt-1">{formatFullDateTime(selectedReport.created_at)}</p>
-                   </div>
-                   
-                   <div>
-                     <p className="text-sm font-medium text-gray-500">Jenis Masalah</p>
-                     <Badge variant="outline" className="mt-1 capitalize">
-                       {formatProblemType(selectedReport.problem_type)}
-                     </Badge>
-                   </div>
-                   
-                   <div>
-                     <p className="text-sm font-medium text-gray-500">Lokasi</p>
-                     <div className="flex items-center mt-1 text-sm text-gray-900">
-                       <MapPin className="h-4 w-4 text-gray-400 mr-1.5" />
-                       <span>{selectedReport.location}</span>
-                     </div>
-                   </div>
-                   
-                   <div>
-                     <p className="text-sm font-medium text-gray-500">Deskripsi</p>
-                     <p className="text-sm text-gray-900 mt-1 whitespace-pre-line">{selectedReport.description}</p>
-                   </div>
-                   
-                   <div>
-                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Bukti Foto</h3>
-                     <div className="bg-gray-100 rounded-lg overflow-hidden border">
-                       {selectedReport.photo_url ? (
-                         <img
-                           src={selectedReport.photo_url}
-                           alt={`Laporan #${selectedReport.id}`}
-                           className="w-full object-contain max-h-[400px]"
-                         />
-                       ) : (
-                         <div className="flex items-center justify-center h-64 bg-gray-100 text-gray-400">
-                           <p>Tidak ada gambar tersedia</p>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-3">
+                       <div>
+                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Status Saat Ini</p>
+                         <Badge className={`${getStatusBadge(selectedReport.status).color} text-xs`}>
+                           {getStatusBadge(selectedReport.status).icon}
+                           <span className="ml-1">{getStatusBadge(selectedReport.status).text}</span>
+                         </Badge>
+                       </div>
+                       
+                       <div>
+                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Dibuat</p>
+                         <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                           <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2" />
+                           {formatFullDateTime(selectedReport.created_at)}
                          </div>
-                       )}
+                       </div>
+                       
+                       <div>
+                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Jenis Masalah</p>
+                         <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+                           {formatProblemType(selectedReport.problem_type)}
+                         </Badge>
+                       </div>
+                     </div>
+                     
+                     <div className="space-y-3">
+                       <div>
+                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Lokasi</p>
+                         <div className="flex items-start text-sm text-gray-900 dark:text-white">
+                           <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2 mt-0.5" />
+                           <span>{selectedReport.location}</span>
+                         </div>
+                       </div>
+                       
+                       <div>
+                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Pelapor</p>
+                         <div className="flex items-center">
+                           <div className="h-8 w-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                             <span className="text-white font-medium text-sm">
+                               {selectedReport.user?.name ? selectedReport.user.name.charAt(0).toUpperCase() : "U"}
+                             </span>
+                           </div>
+                           <div>
+                             <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedReport.user?.name}</p>
+                             <p className="text-xs text-gray-600 dark:text-gray-400">{selectedReport.user?.email}</p>
+                             {selectedReport.user?.nim && (
+                               <p className="text-xs text-gray-600 dark:text-gray-400">NIM: {selectedReport.user.nim}</p>
+                             )}
+                           </div>
+                         </div>
+                       </div>
                      </div>
                    </div>
                    
-                   <div>
-                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Pelapor</h3>
-                     <div className="flex items-center">
-                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                         <span className="text-blue-600 font-medium">
-                           {selectedReport.user?.name ? selectedReport.user.name.charAt(0).toUpperCase() : "U"}
-                         </span>
-                       </div>
-                       <div className="ml-3">
-                         <p className="text-sm font-medium text-gray-900">{selectedReport.user?.name}</p>
-                         <p className="text-xs text-gray-500">{selectedReport.user?.email}</p>
-                         {selectedReport.user?.nim && (
-                           <p className="text-xs text-gray-500">NIM: {selectedReport.user.nim}</p>
-                         )}
-                         {selectedReport.user?.jurusan && (
-                           <p className="text-xs text-gray-500">Jurusan: {selectedReport.user.jurusan}</p>
-                         )}
-                       </div>
+                   <div className="mt-4">
+                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Deskripsi Masalah</p>
+                     <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-600 p-3">
+                       <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{selectedReport.description}</p>
                      </div>
+                   </div>
+                 </div>
+                 
+                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Bukti Foto</h3>
+                   <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-600 overflow-hidden">
+                     {selectedReport.photo_url ? (
+                       <img
+                         src={selectedReport.photo_url}
+                         alt={`Laporan #${selectedReport.id}`}
+                         className="w-full object-contain max-h-[300px]"
+                       />
+                     ) : (
+                       <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500">
+                         <div className="text-center">
+                           <FileText className="w-8 h-8 mx-auto mb-2" />
+                           <p className="text-sm">Tidak ada gambar tersedia</p>
+                         </div>
+                       </div>
+                     )}
                    </div>
                  </div>
                </div>
                
-               {/* Panel Update Status */}
+               {/* Simplified Update Panel with Dark Mode */}
                <div className="lg:col-span-1">
-                 <h3 className="text-lg font-semibold text-gray-700 mb-4">Update Status</h3>
-                 
-                 <div className="space-y-4">
-                   <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                       Status Baru
-                     </label>
-                     <Select
-                       value={updateStatus}
-                       onValueChange={setUpdateStatus}
-                       options={updateStatusOptions}
-                       placeholder="Pilih status"
-                     />
-                   </div>
+                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Update Status</h3>
                    
-                   <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                       Catatan Admin
-                     </label>
-                     <Textarea
-                       value={adminNotes}
-                       onChange={(e) => setAdminNotes(e.target.value)}
-                       placeholder="Tambahkan catatan atau komentar tentang status laporan..."
-                       rows={4}
-                       className="resize-none"
-                     />
-                     <p className="text-xs text-gray-500 mt-1">
-                       Catatan akan terlihat oleh pelapor dan admin lainnya
-                     </p>
-                   </div>
-                   
-                   {selectedReport.admin_notes && (
+                   <div className="space-y-4">
                      <div>
-                       <p className="text-sm font-medium text-gray-500 mb-2">Catatan Sebelumnya</p>
-                       <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                         <p className="text-sm text-gray-900 whitespace-pre-line">{selectedReport.admin_notes}</p>
+                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                         Status Baru
+                       </label>
+                       <Select
+                         value={updateStatus}
+                         onValueChange={setUpdateStatus}
+                         options={updateStatusOptions}
+                         placeholder="Pilih status"
+                       />
+                     </div>
+                     
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                         Catatan Admin
+                       </label>
+                       <Textarea
+                         value={adminNotes}
+                         onChange={(e) => setAdminNotes(e.target.value)}
+                         placeholder="Tambahkan catatan tentang tindakan yang diambil..."
+                         rows={3}
+                         className="resize-none border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                       />
+                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                         Catatan akan terlihat oleh pelapor
+                       </p>
+                     </div>
+                     
+                     {selectedReport.admin_notes && (
+                       <div>
+                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Catatan Sebelumnya</p>
+                         <div className="bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-600">
+                           <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{selectedReport.admin_notes}</p>
+                         </div>
                        </div>
-                     </div>
-                   )}
-                   
-                   <Button
-                     onClick={handleUpdateStatus}
-                     disabled={isUpdating || updateStatus === selectedReport.status}
-                     className="w-full bg-blue-600 hover:bg-blue-700"
-                   >
-                     {isUpdating ? (
-                       <>
-                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                         Memperbarui...
-                       </>
-                     ) : (
-                       <>
-                         <Save className="h-4 w-4 mr-2" />
-                         Update Status
-                       </>
                      )}
-                   </Button>
-                   
-                   <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                     <h4 className="text-sm font-medium text-blue-900 mb-2">Panduan Status</h4>
-                     <div className="space-y-2 text-xs text-blue-800">
-                       <div><span className="font-medium">Menunggu:</span> Laporan baru yang belum ditangani</div>
-                       <div><span className="font-medium">Dalam Proses:</span> Sedang ditangani atau dalam investigasi</div>
-                       <div><span className="font-medium">Diselesaikan:</span> Masalah telah diperbaiki atau ditangani</div>
-                       <div><span className="font-medium">Ditolak:</span> Laporan tidak valid atau tidak dapat ditangani</div>
-                     </div>
+                     
+                     <Button
+                       onClick={handleUpdateStatus}
+                       disabled={isUpdating || updateStatus === selectedReport.status}
+                       className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                     >
+                       {isUpdating ? (
+                         <>
+                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                           Memperbarui...
+                         </>
+                       ) : (
+                         <>
+                           <Save className="h-4 w-4 mr-2" />
+                           Update Status
+                         </>
+                       )}
+                     </Button>
                    </div>
                  </div>
                </div>
              </div>
              
-             {/* Footer dengan tombol aksi */}
-             <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-between">
+             <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between">
                <Button 
                  variant="outline" 
                  onClick={() => setIsDetailOpen(false)}
-                 className="border-gray-300"
+                 className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                >
                  Tutup
                </Button>
-               <div className="flex space-x-2">
-                 <Button
-                   variant="outline"
-                   onClick={() => handleDeleteClick(selectedReport)}
-                   className="border-red-300 text-red-600 hover:bg-red-50"
-                 >
-                   <Trash2 className="h-4 w-4 mr-2" />
-                   Hapus Laporan
-                 </Button>
-               </div>
+               <Button
+                 variant="outline"
+                 onClick={() => handleDeleteClick(selectedReport)}
+                 className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+               >
+                 <Trash2 className="h-4 w-4 mr-2" />
+                 Hapus Laporan
+               </Button>
              </div>
            </motion.div>
          </motion.div>
        )}
      </AnimatePresence>
 
-     {/* Dialog Konfirmasi Hapus */}
+     {/* Simplified Delete Dialog with Dark Mode */}
      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-       <AlertDialogContent>
+       <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
          <AlertDialogHeader>
-           <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
-           <AlertDialogDescription>
+           <AlertDialogTitle className="text-gray-900 dark:text-white">Konfirmasi Penghapusan</AlertDialogTitle>
+           <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
              Tindakan ini akan menghapus laporan #{reportToDelete?.id} secara permanen. 
              Data yang telah dihapus tidak dapat dikembalikan.
            </AlertDialogDescription>
          </AlertDialogHeader>
          <AlertDialogFooter>
-           <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+           <AlertDialogCancel 
+             disabled={isDeleting}
+             className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100"
+           >
+             Batal
+           </AlertDialogCancel>
            <AlertDialogAction 
              onClick={handleDeleteConfirm}
              disabled={isDeleting}
-             className="bg-red-600 hover:bg-red-700"
+             className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
            >
              {isDeleting ? (
                <>

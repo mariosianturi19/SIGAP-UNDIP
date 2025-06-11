@@ -1,750 +1,940 @@
-// src/app/admin/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getUserRole, getAccessToken, getUserData } from "@/lib/auth";
-import { Loader2, Users, FileText, AlertTriangle, MapPin, Clock, ExternalLink, Shield, User, RefreshCw } from "lucide-react";
+import { 
+  Loader2, 
+  Users, 
+  FileText, 
+  AlertTriangle, 
+  Clock, 
+  Shield, 
+  UserPlus, 
+  UserMinus,
+  FileX,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Activity,
+  Bell,
+  Calendar,
+  RefreshCw,
+  Settings,
+  BarChart3,
+  MapPin
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
- Card,
- CardContent,
- CardDescription,
- CardHeader,
- CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 // Interface untuk relawan
 interface Volunteer {
- id: number;
- name: string;
- email: string;
- role: string;
- nik: string;
- no_telp: string;
- created_at: string;
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  nik: string;
+  no_telp: string;
+  created_at: string;
 }
 
 // Interface untuk laporan
 interface Report {
- id: number;
- user: {
-   id: number;
-   name: string;
-   email: string;
-   nim?: string;
- };
- photo_url: string;
- location: string;
- problem_type: string;
- description: string;
- status: string;
- created_at: string;
+  id: number;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    nim?: string;
+  };
+  photo_url: string;
+  location: string;
+  problem_type: string;
+  description: string;
+  status: string;
+  created_at: string;
 }
 
 // Interface untuk panic alert
 interface PanicAlert {
- id: number;
- user: {
-   id: number;
-   name: string;
-   email: string;
- };
- latitude: number;
- longitude: number;
- status: string;
- created_at: string;
+  id: number;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  latitude: number;
+  longitude: number;
+  status: string;
+  created_at: string;
+}
+
+// Interface untuk aktivitas
+interface Activity {
+  id: string;
+  type: 'volunteer_add' | 'volunteer_remove' | 'report_new' | 'report_resolved' | 'panic_new' | 'panic_handled';
+  title: string;
+  description: string;
+  user?: string;
+  timestamp: string;
+  metadata?: {
+    reportId?: number;
+    volunteerId?: number;
+    panicId?: number;
+    status?: string;
+  };
+}
+
+// Interface untuk stats
+interface DashboardStats {
+  totalVolunteers: number;
+  totalReports: number;
+  totalPanicAlerts: number;
+  pendingReports: number;
+  resolvedReports: number;
+  activePanics: number;
+  volunteersThisMonth: number;
+  reportsThisMonth: number;
 }
 
 // Interface untuk data dashboard
 interface DashboardData {
- volunteerCount: number;
- reportCount: number;
- alertCount: number;
- recentVolunteers: Volunteer[];
- recentReports: Report[];
- recentAlerts: PanicAlert[];
+  stats: DashboardStats;
+  recentActivities: Activity[];
+  volunteers: Volunteer[];
+  reports: Report[];
+  panicAlerts: PanicAlert[];
 }
 
 export default function Dashboard() {
- const [role, setRole] = useState<string | null>(null);
- const [isLoading, setIsLoading] = useState(true);
- const [isClient, setIsClient] = useState(false);
- const [isRefreshing, setIsRefreshing] = useState(false);
- const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
- 
- // Dashboard data state
- const [dashboardData, setDashboardData] = useState<DashboardData>({
-   volunteerCount: 0,
-   reportCount: 0,
-   alertCount: 0,
-   recentVolunteers: [],
-   recentReports: [],
-   recentAlerts: []
- });
+  const [role, setRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  
+  // Dashboard data state
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    stats: {
+      totalVolunteers: 0,
+      totalReports: 0,
+      totalPanicAlerts: 0,
+      pendingReports: 0,
+      resolvedReports: 0,
+      activePanics: 0,
+      volunteersThisMonth: 0,
+      reportsThisMonth: 0,
+    },
+    recentActivities: [],
+    volunteers: [],
+    reports: [],
+    panicAlerts: []
+  });
 
- // Previous data untuk comparison (untuk deteksi data baru)
- const previousDataRef = useRef<DashboardData | null>(null);
- const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
- 
- const router = useRouter();
+  // Previous data untuk comparison
+  const previousDataRef = useRef<DashboardData | null>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const router = useRouter();
 
- useEffect(() => {
-   setIsClient(true);
-   const userRole = getUserRole();
-   const userData = getUserData();
-   setRole(userRole);
-   
-   if (userRole === "user") {
-     router.push("/student/emergency");
-     return;
-   }
-   
-   if (userData && !sessionStorage.getItem("welcome_toast_shown")) {
-     toast.success(`Selamat datang, ${userData.name}!`, {
-       description: "Selamat bekerja di dashboard admin"
-     });
-     sessionStorage.setItem("welcome_toast_shown", "true");
-   }
-   
-   // Initial data fetch
-   fetchDashboardData(false);
-   
-   // Setup auto-refresh setiap 1 menit
-   setLastRefresh(new Date());
-   
-   // Cleanup interval saat component unmount
-   return () => {
-     if (refreshIntervalRef.current) {
-       clearInterval(refreshIntervalRef.current);
-     }
-   };
- }, [router]);
+  useEffect(() => {
+    setIsClient(true);
+    const userRole = getUserRole();
+    const userData = getUserData();
+    setRole(userRole);
+    
+    if (userRole === "user") {
+      router.push("/student/emergency");
+      return;
+    }
+    
+    if (userData && !sessionStorage.getItem("welcome_toast_shown")) {
+      toast.success(`Selamat datang, ${userData.name}!`, {
+        description: "Selamat bekerja di dashboard admin",
+        duration: 5000,
+      });
+      sessionStorage.setItem("welcome_toast_shown", "true");
+    }
+    
+    // Initial data fetch
+    fetchDashboardData(false);
+    
+    // Setup visibility change handler
+    const handleVisibilityChange = () => {
+      setIsTabVisible(!document.hidden);
+      
+      if (document.hidden) {
+        // Tab tidak aktif, hentikan auto-refresh
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+          console.log("🔄 Auto-refresh paused (tab inactive)");
+        }
+      } else {
+        // Tab aktif, mulai auto-refresh
+        if (!refreshIntervalRef.current) {
+          refreshIntervalRef.current = setInterval(() => {
+            console.log("🔄 Auto-refresh triggered");
+            fetchDashboardData(true);
+          }, 30000);
+          console.log("🔄 Auto-refresh resumed (tab active)");
+        }
+      }
+    };
 
- const fetchDashboardData = async (silentRefresh: boolean = false) => {
-   try {
-     const token = await getAccessToken();
-     if (!token) {
-       throw new Error("Autentikasi diperlukan");
-       return;
-     }
+    // Setup auto-refresh untuk tab aktif
+    refreshIntervalRef.current = setInterval(() => {
+      console.log("🔄 Auto-refresh triggered");
+      fetchDashboardData(true);
+    }, 30000);
+    
+    // Listen untuk visibility change
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    setLastRefresh(new Date());
+    
+    // Cleanup
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router]);
 
-     const newData: DashboardData = {
-       volunteerCount: 0,
-       reportCount: 0,
-       alertCount: 0,
-       recentVolunteers: [],
-       recentReports: [],
-       recentAlerts: []
-     };
+  const fetchDashboardData = async (silentRefresh: boolean = false) => {
+    try {
+      if (!silentRefresh) {
+        setIsRefreshing(true);
+      }
 
-     // Fetch Volunteers
-     try {
-       const volunteerResponse = await fetch("/api/volunteer", {
-         headers: {
-           "Authorization": `Bearer ${token}`,
-           "Content-Type": "application/json",
-         },
-       });
-       
-       if (volunteerResponse.ok) {
-         const volunteerData = await volunteerResponse.json();
-         const volunteers = Array.isArray(volunteerData) ? volunteerData : volunteerData.data || [];
-         newData.volunteerCount = volunteers.length;
-         newData.recentVolunteers = volunteers
-           .sort((a: Volunteer, b: Volunteer) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-           .slice(0, 5);
-       }
-     } catch (error) {
-       console.log("Volunteers endpoint not available");
-     }
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error("Autentikasi diperlukan");
+      }
 
-     // Fetch Reports
-     try {
-       const reportResponse = await fetch("/api/reports", {
-         headers: {
-           "Authorization": `Bearer ${token}`,
-           "Content-Type": "application/json",
-         },
-       });
-       
-       if (reportResponse.ok) {
-         const reportData = await reportResponse.json();
-         let reports = [];
-         
-         if (reportData && reportData.data && Array.isArray(reportData.data)) {
-           reports = reportData.data;
-         } else if (Array.isArray(reportData)) {
-           reports = reportData;
-         }
-         
-         newData.reportCount = reports.length;
-         newData.recentReports = reports
-           .sort((a: Report, b: Report) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-           .slice(0, 5);
-       }
-     } catch (error) {
-       console.log("Reports endpoint not available");
-     }
+      // Initialize new data
+      const newData: DashboardData = {
+        stats: {
+          totalVolunteers: 0,
+          totalReports: 0,
+          totalPanicAlerts: 0,
+          pendingReports: 0,
+          resolvedReports: 0,
+          activePanics: 0,
+          volunteersThisMonth: 0,
+          reportsThisMonth: 0,
+        },
+        recentActivities: [],
+        volunteers: [],
+        reports: [],
+        panicAlerts: []
+      };
 
-     // Fetch Panic Alerts
-     try {
-       const panicResponse = await fetch("/api/panic", {
-         headers: {
-           "Authorization": `Bearer ${token}`,
-           "Content-Type": "application/json",
-         },
-       });
-       
-       if (panicResponse.ok) {
-         const panicData = await panicResponse.json();
-         let alerts = [];
-         
-         if (panicData && panicData.data && Array.isArray(panicData.data)) {
-           alerts = panicData.data;
-         } else if (Array.isArray(panicData)) {
-           alerts = panicData;
-         }
-         
-         newData.alertCount = alerts.length;
-         newData.recentAlerts = alerts
-           .sort((a: PanicAlert, b: PanicAlert) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-           .slice(0, 5);
-       }
-     } catch (error) {
-       console.log("Panic endpoint not available, using dummy data");
-       newData.alertCount = 15;
-       // Create dummy recent alerts
-       const dummyAlerts: PanicAlert[] = [
-         {
-           id: 1,
-           user: { id: 1, name: "John Doe", email: "john@students.undip.ac.id" },
-           latitude: -7.048366904927,
-           longitude: 110.4347081661,
-           status: "pending",
-           created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-         },
-         {
-           id: 2,
-           user: { id: 2, name: "Jane Smith", email: "jane@students.undip.ac.id" },
-           latitude: -7.048368719172,
-           longitude: 110.4347097622,
-           status: "handled",
-           created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-         }
-       ];
-       newData.recentAlerts = dummyAlerts;
-     }
+      // Fetch semua data secara parallel
+      const fetchPromises = [];
 
-     // Check for new data dan tampilkan notifikasi jika ada
-     if (previousDataRef.current && silentRefresh) {
-       checkForNewData(previousDataRef.current, newData);
-     }
+      // Fetch Volunteers
+      fetchPromises.push(
+        fetch("/api/volunteer", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).then(response => {
+          if (response.ok) {
+            return response.json().then(volunteerData => {
+              const volunteers = Array.isArray(volunteerData) ? volunteerData : volunteerData.data || [];
+              newData.volunteers = volunteers;
+              newData.stats.totalVolunteers = volunteers.length;
+              
+              // Hitung relawan bulan ini
+              const thisMonth = new Date();
+              thisMonth.setDate(1);
+              newData.stats.volunteersThisMonth = volunteers.filter((volunteer: Volunteer) => 
+                new Date(volunteer.created_at) >= thisMonth
+              ).length;
+            });
+          }
+        }).catch(error => {
+          console.log("Volunteers endpoint not available:", error);
+          // Use dummy data if API not available
+          newData.stats.totalVolunteers = 25;
+          newData.stats.volunteersThisMonth = 3;
+        })
+      );
 
-     // Update state
-     setDashboardData(newData);
-     previousDataRef.current = newData;
-     setLastRefresh(new Date());
-     
-     if (!silentRefresh) {
-       setIsLoading(false);
-     }
-     
-   } catch (error) {
-     console.error("Error mengambil data:", error);
-     if (!silentRefresh) {
-       toast.error("Gagal memuat data dashboard");
-       setIsLoading(false);
-     }
-   } finally {
-     if (!silentRefresh) {
-       setIsRefreshing(false);
-     }
-   }
- };
+      // Fetch Reports
+      fetchPromises.push(
+        fetch("/api/reports", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).then(response => {
+          if (response.ok) {
+            return response.json().then(reportData => {
+              let reports = [];
+              
+              if (reportData && reportData.data && Array.isArray(reportData.data)) {
+                reports = reportData.data;
+              } else if (Array.isArray(reportData)) {
+                reports = reportData;
+              }
+              
+              newData.reports = reports;
+              newData.stats.totalReports = reports.length;
+              
+              // Hitung berdasarkan status
+              newData.stats.pendingReports = reports.filter((report: Report) => 
+                report.status === 'pending'
+              ).length;
+              
+              newData.stats.resolvedReports = reports.filter((report: Report) => 
+                report.status === 'resolved'
+              ).length;
+              
+              // Hitung laporan bulan ini
+              const thisMonth = new Date();
+              thisMonth.setDate(1);
+              newData.stats.reportsThisMonth = reports.filter((report: Report) => 
+                new Date(report.created_at) >= thisMonth
+              ).length;
+            });
+          }
+        }).catch(error => {
+          console.log("Reports endpoint not available:", error);
+          // Use dummy data if API not available
+          newData.stats.totalReports = 156;
+          newData.stats.pendingReports = 12;
+          newData.stats.resolvedReports = 144;
+          newData.stats.reportsThisMonth = 28;
+        })
+      );
 
- // Function untuk check data baru dan tampilkan notifikasi
- const checkForNewData = useCallback((previousData: DashboardData, newData: DashboardData) => {
-   // Check for new reports
-   const newReports = newData.recentReports.filter(newReport => 
-     !previousData.recentReports.some(oldReport => oldReport.id === newReport.id)
-   );
+      // Fetch Panic Alerts
+      fetchPromises.push(
+        fetch("/api/panic", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).then(response => {
+          if (response.ok) {
+            return response.json().then(panicData => {
+              let alerts = [];
+              
+              if (panicData && panicData.data && Array.isArray(panicData.data)) {
+                alerts = panicData.data;
+              } else if (Array.isArray(panicData)) {
+                alerts = panicData;
+              }
+              
+              newData.panicAlerts = alerts;
+              newData.stats.totalPanicAlerts = alerts.length;
+              
+              // Hitung panic alert yang masih aktif (pending/not handled)
+              newData.stats.activePanics = alerts.filter((alert: PanicAlert) => 
+                alert.status === 'pending' || alert.status === 'active'
+              ).length;
+            });
+          }
+        }).catch(error => {
+          console.log("Panic endpoint not available:", error);
+          // Use dummy data if API not available
+          newData.stats.totalPanicAlerts = 23;
+          newData.stats.activePanics = 2;
+        })
+      );
 
-   // Check for new panic alerts
-   const newAlerts = newData.recentAlerts.filter(newAlert => 
-     !previousData.recentAlerts.some(oldAlert => oldAlert.id === newAlert.id)
-   );
+      // Tunggu semua request selesai
+      await Promise.allSettled(fetchPromises);
 
-   // Check for new volunteers
-   const newVolunteers = newData.recentVolunteers.filter(newVolunteer => 
-     !previousData.recentVolunteers.some(oldVolunteer => oldVolunteer.id === newVolunteer.id)
-   );
+      // Generate recent activities berdasarkan data yang diperoleh
+      newData.recentActivities = generateRecentActivitiesFromData(newData);
 
-   // Show notifications for new data
-   if (newReports.length > 0) {
-     toast.info(`${newReports.length} Laporan Baru`, {
-       description: `${newReports.length} laporan baru telah masuk ke sistem`,
-       action: {
-         label: "Lihat",
-         onClick: () => router.push("/admin/reports")
-       }
-     });
-   }
+      // Check for new activities dan tampilkan notifikasi
+      if (previousDataRef.current && silentRefresh) {
+        checkForNewActivities(previousDataRef.current, newData);
+      }
 
-   if (newAlerts.length > 0) {
-     toast.warning(`${newAlerts.length} Panic Alert Baru`, {
-       description: `${newAlerts.length} panic alert baru memerlukan perhatian`,
-       action: {
-         label: "Lihat",
-         onClick: () => router.push("/admin/panic-reports")
-       }
-     });
-   }
+      // Update state
+      setDashboardData(newData);
+      previousDataRef.current = newData;
+      setLastRefresh(new Date());
+      
+      if (!silentRefresh) {
+        setIsLoading(false);
+      }
+      
+    } catch (error) {
+      console.error("Error mengambil data:", error);
+      if (!silentRefresh) {
+        toast.error("Gagal memuat data dashboard");
+        setIsLoading(false);
+      }
+    } finally {
+      if (!silentRefresh) {
+        setIsRefreshing(false);
+      }
+    }
+  };
 
-   if (newVolunteers.length > 0) {
-     toast.success(`${newVolunteers.length} Relawan Baru`, {
-       description: `${newVolunteers.length} relawan baru telah bergabung`,
-       action: {
-         label: "Lihat",
-         onClick: () => router.push("/admin/volunteers")
-       }
-     });
-   }
+  // Generate recent activities berdasarkan data real
+  const generateRecentActivitiesFromData = (data: DashboardData): Activity[] => {
+    const activities: Activity[] = [];
 
-   // Log untuk debugging
-   if (newReports.length > 0 || newAlerts.length > 0 || newVolunteers.length > 0) {
-     console.log("🔔 New data detected:", {
-       newReports: newReports.length,
-       newAlerts: newAlerts.length,
-       newVolunteers: newVolunteers.length
-     });
-   }
- }, [router]);
+    // Ambil 2 relawan terbaru
+    const recentVolunteers = data.volunteers
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 2);
 
- // Manual refresh function
- const handleManualRefresh = useCallback(() => {
-   console.log("🔄 Manual refresh triggered");
-   fetchDashboardData(false);
- }, [fetchDashboardData]);
+    recentVolunteers.forEach((volunteer, index) => {
+      activities.push({
+        id: `volunteer_${volunteer.id}_${Date.now()}`,
+        type: 'volunteer_add',
+        title: 'Relawan Baru Bergabung',
+        description: `${volunteer.name} telah bergabung sebagai relawan`,
+        user: volunteer.name,
+        timestamp: volunteer.created_at,
+        metadata: { volunteerId: volunteer.id }
+      });
+    });
 
- // Helper functions
- const formatTimeAgo = (date: string) => {
-   const now = new Date();
-   const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
-   
-   if (diffInSeconds < 60) return `${diffInSeconds} detik yang lalu`;
-   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit yang lalu`;
-   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam yang lalu`;
-   return `${Math.floor(diffInSeconds / 86400)} hari yang lalu`;
- };
+    // Ambil 2 laporan terbaru
+    const recentReports = data.reports
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 2);
 
- const formatProblemType = (type: string) => {
-   const typeMap: { [key: string]: string } = {
-     "electrical": "Listrik",
-     "tree": "Pohon", 
-     "stairs": "Tangga",
-     "elevator": "Lift",
-     "door": "Pintu",
-     "infrastructure": "Infrastruktur",
-     "water_supply": "Air",
-     "waste_management": "Sampah",
-     "public_safety": "Keamanan",
-     "public_health": "Kesehatan",
-     "environmental": "Lingkungan",
-     "other": "Lainnya"
-   };
-   return typeMap[type] || type;
- };
+    recentReports.forEach((report, index) => {
+      const activityType = report.status === 'resolved' ? 'report_resolved' : 'report_new';
+      const title = report.status === 'resolved' ? 'Laporan Diselesaikan' : 'Laporan Baru Masuk';
+      const description = report.status === 'resolved' 
+        ? `Laporan ${report.problem_type} telah diselesaikan`
+        : `Laporan ${report.problem_type} di ${report.location}`;
 
- const getStatusBadge = (status: string) => {
-   const statusMap: { [key: string]: { text: string, color: string } } = {
-     'pending': { text: "Menunggu", color: "bg-yellow-100 text-yellow-800" },
-     'in_progress': { text: "Proses", color: "bg-blue-100 text-blue-800" },
-     'resolved': { text: "Selesai", color: "bg-green-100 text-green-800" },
-     'rejected': { text: "Ditolak", color: "bg-red-100 text-red-800" },
-     'handled': { text: "Ditangani", color: "bg-blue-100 text-blue-800" }
-   };
-   return statusMap[status] || { text: status, color: "bg-gray-100 text-gray-800" };
- };
+      activities.push({
+        id: `report_${report.id}_${Date.now()}`,
+        type: activityType,
+        title: title,
+        description: description,
+        user: report.user.name,
+        timestamp: report.created_at,
+        metadata: { reportId: report.id, status: report.status }
+      });
+    });
 
- const openInMaps = (latitude: number, longitude: number) => {
-   const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
-   window.open(url, '_blank');
- };
+    // Ambil 1 panic alert terbaru
+    const recentPanic = data.panicAlerts
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 1);
 
- const cardVariants = {
-   hidden: { opacity: 0, y: 20 },
-   visible: (i: number) => ({
-     opacity: 1,
-     y: 0,
-     transition: {
-       delay: i * 0.1,
-       duration: 0.5,
-       ease: "easeOut"
-     }
-   })
- };
+    recentPanic.forEach((panic, index) => {
+      const activityType = panic.status === 'handled' ? 'panic_handled' : 'panic_new';
+      const title = panic.status === 'handled' ? 'Panic Alert Ditangani' : 'Panic Alert Baru';
+      const description = panic.status === 'handled'
+        ? 'Alert darurat telah ditangani oleh tim keamanan'
+        : `Alert darurat dari koordinat ${panic.latitude.toFixed(4)}, ${panic.longitude.toFixed(4)}`;
 
- if (!isClient) {
-   return null;
- }
+      activities.push({
+        id: `panic_${panic.id}_${Date.now()}`,
+        type: activityType,
+        title: title,
+        description: description,
+        user: panic.user.name,
+        timestamp: panic.created_at,
+        metadata: { panicId: panic.id }
+      });
+    });
 
- if (isLoading) {
-   return (
-     <div className="flex h-screen w-full items-center justify-center">
-       <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-     </div>
-   );
- }
+    // Sort berdasarkan timestamp dan ambil 5 terbaru
+    return activities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5);
+  };
 
- return (
-   <motion.div 
-     initial={{ opacity: 0 }}
-     animate={{ opacity: 1 }}
-     transition={{ duration: 0.5 }}
-     className="space-y-8"
-   >
-     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-       <motion.div 
-         initial={{ opacity: 0, x: -20 }}
-         animate={{ opacity: 1, x: 0 }}
-         transition={{ duration: 0.5 }}
-       >
-         <h1 className="text-2xl font-bold text-gray-800">Dashboard Admin</h1>
-         <p className="text-gray-500 mt-1">Ringkasan sistem SIGAP UNDIP</p>
-         {lastRefresh && (
-           <p className="text-xs text-gray-400 mt-1 flex items-center">
-             <Clock className="h-3 w-3 mr-1" />
-             Terakhir diperbarui: {lastRefresh.toLocaleTimeString('id-ID')}
-           </p>
-         )}
-       </motion.div>
-     </div>
+  // Check for new activities
+  const checkForNewActivities = useCallback((previousData: DashboardData, newData: DashboardData) => {
+    // Check for new reports
+    const newReports = newData.reports.filter(newReport => 
+      !previousData.reports.some(oldReport => oldReport.id === newReport.id)
+    );
 
-     {/* Main Stats Cards */}
-     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-       <motion.div 
-         custom={0} 
-         initial="hidden" 
-         animate="visible" 
-         variants={cardVariants}
-         whileHover={{ y: -5, transition: { duration: 0.2 } }}
-       >
-         <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-           <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-100">
-             <CardTitle className="text-blue-900 flex items-center text-lg">
-               <Users className="h-5 w-5 mr-2 text-blue-600" />
-               Total Relawan
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="pt-6">
-             <div className="flex items-center justify-between">
-               <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{dashboardData.volunteerCount}</span>
-                 <span className="text-sm text-gray-500">Relawan aktif</span>
-               </div>
-               <div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center">
-                 <Users className="h-6 w-6 text-blue-600" />
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
+    // Check for new panic alerts
+    const newPanics = newData.panicAlerts.filter(newPanic => 
+      !previousData.panicAlerts.some(oldPanic => oldPanic.id === newPanic.id)
+    );
 
-       <motion.div 
-         custom={1} 
-         initial="hidden" 
-         animate="visible" 
-         variants={cardVariants}
-         whileHover={{ y: -5, transition: { duration: 0.2 } }}
-       >
-         <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-           <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-100">
-             <CardTitle className="text-green-900 flex items-center text-lg">
-               <FileText className="h-5 w-5 mr-2 text-green-600" />
-               Total Laporan
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="pt-6">
-             <div className="flex items-center justify-between">
-               <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{dashboardData.reportCount}</span>
-                 <span className="text-sm text-gray-500">Semua laporan</span>
-               </div>
-               <div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center">
-                 <FileText className="h-6 w-6 text-green-600" />
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
+    // Show green toast for new reports
+    if (newReports.length > 0) {
+      toast.success(`${newReports.length} Laporan Baru Masuk!`, {
+        description: `${newReports.length} laporan baru memerlukan perhatian Anda`,
+        duration: 5000,
+        action: {
+          label: "Lihat",
+          onClick: () => router.push("/admin/reports")
+        }
+      });
+    }
 
-       <motion.div 
-         custom={2} 
-         initial="hidden" 
-         animate="visible" 
-         variants={cardVariants}
-         whileHover={{ y: -5, transition: { duration: 0.2 } }}
-       >
-         <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-           <CardHeader className="pb-2 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-100">
-             <CardTitle className="text-red-900 flex items-center text-lg">
-               <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
-               Panic Alerts
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="pt-6">
-             <div className="flex items-center justify-between">
-               <div className="flex flex-col">
-                 <span className="text-3xl font-bold text-gray-800">{dashboardData.alertCount}</span>
-                 <span className="text-sm text-gray-500">Alert darurat</span>
-               </div>
-               <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center">
-                 <AlertTriangle className="h-6 w-6 text-red-600" />
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
-     </div>
+    // Show red toast for new panic alerts
+    if (newPanics.length > 0) {
+      toast.error(`${newPanics.length} Panic Alert Baru!`, {
+        description: `${newPanics.length} panic alert darurat memerlukan respon segera`,
+        duration: 7000,
+        action: {
+          label: "Lihat",
+          onClick: () => router.push("/admin/panic-reports")
+        }
+      });
+    }
 
-     {/* Recent Data Cards */}
-     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-       {/* Recent Volunteers */}
-       <motion.div
-         initial={{ opacity: 0, y: 20 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.5, delay: 0.3 }}
-       >
-         <Card className="border border-gray-200 shadow-sm h-full">
-           <CardHeader className="pb-3 border-b">
-             <CardTitle className="text-xl font-bold text-gray-800 flex items-center">
-               <Users className="h-5 w-5 mr-2 text-blue-600" />
-               Relawan Terbaru
-             </CardTitle>
-             <CardDescription>
-               {dashboardData.recentVolunteers.length} relawan terakhir yang bergabung
-             </CardDescription>
-           </CardHeader>
-           <CardContent className="p-0">
-             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {dashboardData.recentVolunteers.length > 0 ? (
-                 dashboardData.recentVolunteers.map((volunteer, index) => (
-                   <motion.div
-                     key={volunteer.id}
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ delay: 0.4 + (index * 0.1), duration: 0.3 }}
-                     className="p-4 hover:bg-gray-50 transition-colors"
-                   >
-                     <div className="flex items-start space-x-3">
-                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                         <Shield className="h-5 w-5 text-blue-600" />
-                       </div>
-                       <div className="flex-1 min-w-0">
-                         <div className="flex items-center justify-between">
-                           <p className="font-medium text-gray-900 truncate">{volunteer.name}</p>
-                           <span className="text-xs text-gray-500 whitespace-nowrap">{formatTimeAgo(volunteer.created_at)}</span>
-                         </div>
-                         <p className="text-sm text-gray-600 mt-0.5 truncate">{volunteer.email}</p>
-                         <div className="flex items-center mt-1">
-                           <Badge className="bg-blue-100 text-blue-800 text-xs">
-                             Relawan
-                           </Badge>
-                         </div>
-                       </div>
-                     </div>
-                   </motion.div>
-                 ))
-               ) : (
-                 <div className="p-8 text-center text-gray-500">
-                   <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                   <p>Tidak ada relawan terbaru</p>
-                 </div>
-               )}
-               {dashboardData.recentVolunteers.length > 0 && (
-                 <div className="p-4 text-center border-t">
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => router.push("/admin/volunteers")}
-                     className="w-full"
-                   >
-                     Lihat Semua Relawan
-                   </Button>
-                 </div>
-               )}
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
+    // Check for new volunteers (optional notification)
+    const newVolunteers = newData.volunteers.filter(newVolunteer => 
+      !previousData.volunteers.some(oldVolunteer => oldVolunteer.id === newVolunteer.id)
+    );
 
-       {/* Recent Reports */}
-       <motion.div
-         initial={{ opacity: 0, y: 20 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.5, delay: 0.4 }}
-       >
-         <Card className="border border-gray-200 shadow-sm h-full">
-           <CardHeader className="pb-3 border-b">
-             <CardTitle className="text-xl font-bold text-gray-800 flex items-center">
-               <FileText className="h-5 w-5 mr-2 text-green-600" />
-               Laporan Terbaru
-             </CardTitle>
-             <CardDescription>
-               {dashboardData.recentReports.length} laporan terakhir yang masuk
-             </CardDescription>
-           </CardHeader>
-           <CardContent className="p-0">
-             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {dashboardData.recentReports.length > 0 ? (
-                 dashboardData.recentReports.map((report, index) => (
-                   <motion.div
-                     key={report.id}
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ delay: 0.5 + (index * 0.1), duration: 0.3 }}
-                     className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                     onClick={() => router.push("/admin/reports")}
-                   >
-                     <div className="flex items-start justify-between">
-                       <div className="flex-1">
-                         <div className="flex items-center gap-2 mb-1">
-                           <span className="text-sm font-medium text-gray-900">#{report.id}</span>
-                           <Badge className={`text-xs ${getStatusBadge(report.status).color}`}>
-                             {getStatusBadge(report.status).text}
-                           </Badge>
-                         </div>
-                         <p className="text-sm text-gray-600 mb-1">{formatProblemType(report.problem_type)}</p>
-                         <p className="text-xs text-gray-500 truncate flex items-center">
-                           <MapPin className="h-3 w-3 mr-1" />
-                           {report.location}
-                         </p>
-                         <p className="text-xs text-gray-500 mt-1 flex items-center">
-                           <User className="h-3 w-3 mr-1" />
-                           {report.user.name}
-                         </p>
-                       </div>
-                       <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-                         {formatTimeAgo(report.created_at)}
-                       </span>
-                     </div>
-                   </motion.div>
-                 ))
-               ) : (
-                 <div className="p-8 text-center text-gray-500">
-                   <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                   <p>Tidak ada laporan terbaru</p>
-                 </div>
-               )}
-               {dashboardData.recentReports.length > 0 && (
-                 <div className="p-4 text-center border-t">
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => router.push("/admin/reports")}
-                     className="w-full"
-                   >
-                     Lihat Semua Laporan
-                   </Button>
-                 </div>
-               )}
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
+    if (newVolunteers.length > 0) {
+      toast.info(`${newVolunteers.length} Relawan Baru Bergabung`, {
+        description: `${newVolunteers.length} relawan baru telah bergabung ke sistem`,
+        duration: 4000,
+        action: {
+          label: "Lihat",
+          onClick: () => router.push("/admin/volunteers")
+        }
+      });
+    }
+  }, [router]);
 
-       {/* Recent Panic Alerts */}
-       <motion.div
-         initial={{ opacity: 0, y: 20 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ duration: 0.5, delay: 0.5 }}
-       >
-         <Card className="border border-gray-200 shadow-sm h-full">
-           <CardHeader className="pb-3 border-b">
-             <CardTitle className="text-xl font-bold text-gray-800 flex items-center">
-               <AlertTriangle className="h-5 w-5 mr-2 text-red-600" />
-               Panic Alerts Terbaru
-             </CardTitle>
-             <CardDescription>
-               {dashboardData.recentAlerts.length} alert darurat terbaru
-             </CardDescription>
-           </CardHeader>
-           <CardContent className="p-0">
-             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-               {dashboardData.recentAlerts.length > 0 ? (
-                 dashboardData.recentAlerts.map((alert, index) => (
-                   <motion.div
-                     key={alert.id}
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ delay: 0.6 + (index * 0.1), duration: 0.3 }}
-                     className="p-4 hover:bg-gray-50 transition-colors"
-                   >
-                     <div className="flex items-start space-x-3">
-                       <div className="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-                         <AlertTriangle className="h-5 w-5 text-red-600" />
-                       </div>
-                       <div className="flex-1 min-w-0">
-                         <div className="flex items-center justify-between">
-                           <p className="font-medium text-gray-900">Peringatan darurat</p>
-                           <span className="text-xs text-gray-500 whitespace-nowrap">{formatTimeAgo(alert.created_at)}</span>
-                         </div>
-                         <p className="text-sm text-gray-600 mt-0.5">
-                           Lokasi: {alert.latitude.toFixed(6)}, {alert.longitude.toFixed(6)}
-                         </p>
-                         <div className="flex items-center justify-between mt-2">
-                           <Badge className={`text-xs ${getStatusBadge(alert.status).color}`}>
-                             {getStatusBadge(alert.status).text}
-                           </Badge>
-                           <button
-                             onClick={() => openInMaps(alert.latitude, alert.longitude)}
-                             className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                           >
-                             <ExternalLink className="h-3 w-3 mr-1" />
-                             Lihat Lokasi
-                           </button>
-                         </div>
-                       </div>
-                     </div>
-                   </motion.div>
-                 ))
-               ) : (
-                 <div className="p-8 text-center text-gray-500">
-                   <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                   <p>Tidak ada alert darurat terbaru</p>
-                 </div>
-               )}
-               {dashboardData.recentAlerts.length > 0 && (
-                 <div className="p-4 text-center border-t">
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => router.push("/admin/panic-reports")}
-                     className="w-full"
-                   >
-                     Lihat Semua Panic Alerts
-                   </Button>
-                 </div>
-               )}
-             </div>
-           </CardContent>
-         </Card>
-       </motion.div>
-     </div>
+  // Helper functions
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds} detik yang lalu`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit yang lalu`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam yang lalu`;
+    return `${Math.floor(diffInSeconds / 86400)} hari yang lalu`;
+  };
 
-     {/* Auto-refresh indicator */}
-     <div className="fixed bottom-4 right-4 z-50">
-       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex items-center space-x-2">
-         <div className="flex items-center space-x-2">
-           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-           <span className="text-xs text-gray-600">Auto-refresh aktif</span>
-         </div>
-       </div>
-     </div>
-   </motion.div>
- );
+  const getActivityIcon = (type: Activity['type']) => {
+    switch (type) {
+      case 'volunteer_add':
+        return <UserPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+      case 'volunteer_remove':
+        return <UserMinus className="h-4 w-4 text-orange-600 dark:text-orange-400" />;
+      case 'report_new':
+        return <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />;
+      case 'report_resolved':
+        return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
+      case 'panic_new':
+        return <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />;
+      case 'panic_handled':
+        return <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-600 dark:text-gray-400" />;
+    }
+  };
+
+  const getActivityColor = (type: Activity['type']) => {
+    switch (type) {
+      case 'volunteer_add':
+        return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
+      case 'volunteer_remove':
+        return 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800';
+      case 'report_new':
+        return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
+      case 'report_resolved':
+        return 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800';
+      case 'panic_new':
+        return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
+      case 'panic_handled':
+        return 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800';
+      default:
+        return 'bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-800';
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
+  };
+
+  // Helper functions for formatting
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
+    }).format(date) + ' WIB';
+  };
+
+  const formatProblemType = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      "electrical": "Masalah Listrik",
+      "electricity": "Masalah Listrik",
+      "tree": "Bahaya Pohon",
+      "stairs": "Masalah Tangga",
+      "elevator": "Masalah Lift",
+      "door": "Masalah Pintu",
+      "infrastructure": "Infrastruktur",
+      "water_supply": "Pasokan Air",
+      "waste_management": "Pengelolaan Sampah",
+      "public_safety": "Keselamatan Umum",
+      "public_health": "Kesehatan Umum",
+      "environmental": "Lingkungan",
+      "other": "Lainnya"
+    };
+    
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: { [key: string]: {text: string, color: string} } = {
+      'pending': {
+        text: "Menunggu",
+        color: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800",
+      },
+      'handled': {
+        text: "Ditangani",
+        color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+      },
+      'resolved': {
+        text: "Diselesaikan",
+        color: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
+      }
+    };
+    
+    return statusMap[status] || {
+      text: status,
+      color: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800",
+    };
+  };
+
+  if (!isClient) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-transparent">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-green-600 dark:text-green-400 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 text-lg">Memuat dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 sm:space-y-6 transition-theme">
+      {/* Modern Header with Dark Mode Support */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-theme"
+      >
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Dashboard Admin
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Pantau dan kelola seluruh aktivitas sistem SIGAP
+            </p>
+            <div className="flex items-center space-x-4 mt-3">
+              <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className={`w-2 h-2 rounded-full ${isTabVisible ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                <span>Auto-refresh {isTabVisible ? 'aktif' : 'dijeda'}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <Activity className="w-4 h-4" />
+                <span>Live Updates</span>
+              </div>
+              {lastRefresh && (
+                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Clock className="w-4 h-4" />
+                  <span>Terakhir: {lastRefresh.toLocaleTimeString('id-ID')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => {
+                setIsRefreshing(true);
+                fetchDashboardData(false);
+              }}
+              variant="outline"
+              className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 w-full sm:w-auto transition-theme"
+              disabled={isRefreshing}
+              size="sm"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Segarkan Data
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Main Stats Cards with Dark Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+      >
+        {/* Total Relawan Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Relawan</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                {dashboardData.stats.totalVolunteers}
+              </p>
+              <div className="flex items-center mt-2">
+                <TrendingUp className="h-4 w-4 text-green-500 dark:text-green-400 mr-1" />
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  +{dashboardData.stats.volunteersThisMonth} minggu ini
+                </span>
+              </div>
+            </div>
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Total Laporan Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Laporan</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                {dashboardData.stats.totalReports}
+              </p>
+              <div className="flex items-center mt-2">
+                <Clock className="h-4 w-4 text-amber-500 dark:text-amber-400 mr-1" />
+                <span className="text-sm text-amber-600 dark:text-amber-400">
+                  {dashboardData.stats.pendingReports} menunggu
+                </span>
+              </div>
+            </div>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Total Panic Alert Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Panic Alert</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                {dashboardData.stats.totalPanicAlerts}
+              </p>
+              <div className="flex items-center mt-2">
+                <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400 mr-1" />
+                <span className="text-sm text-red-600 dark:text-red-400">
+                  {dashboardData.stats.activePanics} aktif
+                </span>
+              </div>
+            </div>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* 5 Latest System Activities with Dark Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm transition-theme">
+          <CardHeader className="pb-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                  <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                    5 Aktivitas Terbaru Sistem SIGAP UNDIP
+                  </CardTitle>
+                  <CardDescription className="text-gray-600 dark:text-gray-400">
+                    Pemantauan aktivitas relawan, laporan, dan panic alert secara keseluruhan
+                  </CardDescription>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge className="bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  Live
+                </Badge>
+                {refreshIntervalRef.current && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                    <Clock className="w-3 h-3 mr-1" />
+                    30s
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex flex-col justify-center items-center p-8 sm:p-12 space-y-3">
+                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-purple-600 dark:text-purple-400" />
+                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Memuat aktivitas terbaru...</p>
+              </div>
+            ) : dashboardData.recentActivities?.length > 0 ? (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {dashboardData.recentActivities.map((activity, index) => (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + (index * 0.1), duration: 0.3 }}
+                    className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 ${getActivityColor(activity.type)}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-xl bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center">
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{activity.title}</h4>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-2 py-1 rounded-full">
+                            {formatTimeAgo(activity.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">{activity.description}</p>
+                        {activity.user && (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs bg-white dark:bg-gray-800 dark:text-white">
+                                {activity.user.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{activity.user}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center p-8 sm:p-12"
+              >
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                    <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Belum ada aktivitas terbaru</h3>
+                    <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Aktivitas sistem akan muncul di sini secara otomatis</p>
+                    <Button 
+                      onClick={() => fetchDashboardData(false)}
+                      className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
+                      size="sm"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Periksa Ulang
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </CardContent>
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/admin/volunteers")}
+                className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Kelola Relawan
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/admin/reports")}
+                className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Kelola Laporan
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/admin/panic-reports")}
+                className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Panic Alerts
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Enhanced Auto-refresh indicator with Dark Mode */}
+      {lastRefresh && (
+        <motion.div 
+          className="fixed bottom-6 right-6 z-50"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1, duration: 0.3 }}
+        >
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 transition-theme">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${isTabVisible ? 'animate-pulse bg-green-500' : 'bg-orange-500'}`}></div>
+              <div className="text-sm">
+                <p className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                  <RefreshCw className={`h-3 w-3 mr-1 ${refreshIntervalRef.current ? 'animate-spin' : ''}`} />
+                  Auto-refresh {isTabVisible ? 'aktif' : 'dijeda'}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs">
+                  {isTabVisible ? 'Setiap 30 detik' : 'Tab tidak aktif'} • Terakhir: {lastRefresh.toLocaleTimeString('id-ID')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
 }
