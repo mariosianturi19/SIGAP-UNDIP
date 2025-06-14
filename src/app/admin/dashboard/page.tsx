@@ -163,6 +163,12 @@ export default function Dashboard() {
       toast.success(`Selamat datang, ${userData.name}!`, {
         description: "Selamat bekerja di dashboard admin",
         duration: 5000,
+        style: {
+          background: 'rgb(34, 197, 94)',
+          color: 'white',
+          border: '1px solid rgb(22, 163, 74)',
+        },
+        className: 'dark:bg-green-600 dark:text-white dark:border-green-500'
       });
       sessionStorage.setItem("welcome_toast_shown", "true");
     }
@@ -170,36 +176,19 @@ export default function Dashboard() {
     // Initial data fetch
     fetchDashboardData(false);
     
-    // Setup visibility change handler
+    // Setup visibility change handler - hanya untuk update UI state, bukan untuk auto-refresh
     const handleVisibilityChange = () => {
       setIsTabVisible(!document.hidden);
-      
-      if (document.hidden) {
-        // Tab tidak aktif, hentikan auto-refresh
-        if (refreshIntervalRef.current) {
-          clearInterval(refreshIntervalRef.current);
-          refreshIntervalRef.current = null;
-          console.log("🔄 Auto-refresh paused (tab inactive)");
-        }
-      } else {
-        // Tab aktif, mulai auto-refresh
-        if (!refreshIntervalRef.current) {
-          refreshIntervalRef.current = setInterval(() => {
-            console.log("🔄 Auto-refresh triggered");
-            fetchDashboardData(true);
-          }, 30000);
-          console.log("🔄 Auto-refresh resumed (tab active)");
-        }
-      }
+      console.log(`🔄 Admin tab visibility changed: ${!document.hidden ? 'visible' : 'hidden'}`);
     };
 
-    // Setup auto-refresh untuk tab aktif
+    // Setup auto-refresh yang berjalan terus tanpa tergantung tab visibility
     refreshIntervalRef.current = setInterval(() => {
-      console.log("🔄 Auto-refresh triggered");
+      console.log("🔄 Admin auto-refresh triggered (30s interval)");
       fetchDashboardData(true);
-    }, 30000);
+    }, 30000); // 30 detik untuk admin
     
-    // Listen untuk visibility change
+    // Listen untuk visibility change hanya untuk UI indicator
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     setLastRefresh(new Date());
@@ -209,6 +198,7 @@ export default function Dashboard() {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
         refreshIntervalRef.current = null;
+        console.log("🔄 Admin auto-refresh cleaned up");
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -365,9 +355,9 @@ export default function Dashboard() {
       // Generate recent activities berdasarkan data yang diperoleh
       newData.recentActivities = generateRecentActivitiesFromData(newData);
 
-      // Check for new activities dan tampilkan notifikasi
-      if (previousDataRef.current && silentRefresh) {
-        checkForNewActivities(previousDataRef.current, newData);
+      // Check for new activities dan tampilkan notifikasi - UPDATED: check both for auto and manual refresh
+      if (previousDataRef.current) {
+        checkForNewActivities(previousDataRef.current, newData, silentRefresh);
       }
 
       // Update state
@@ -382,7 +372,14 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error mengambil data:", error);
       if (!silentRefresh) {
-        toast.error("Gagal memuat data dashboard");
+        toast.error("Gagal memuat data dashboard", {
+          style: {
+            background: 'rgb(239, 68, 68)',
+            color: 'white',
+            border: '1px solid rgb(220, 38, 38)',
+          },
+          className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
+        });
         setIsLoading(false);
       }
     } finally {
@@ -465,8 +462,8 @@ export default function Dashboard() {
       .slice(0, 5);
   };
 
-  // Check for new activities
-  const checkForNewActivities = useCallback((previousData: DashboardData, newData: DashboardData) => {
+  // Check for new activities - UPDATED: tambah parameter untuk tipe refresh
+  const checkForNewActivities = useCallback((previousData: DashboardData, newData: DashboardData, isAutoRefresh: boolean) => {
     // Check for new reports
     const newReports = newData.reports.filter(newReport => 
       !previousData.reports.some(oldReport => oldReport.id === newReport.id)
@@ -477,11 +474,18 @@ export default function Dashboard() {
       !previousData.panicAlerts.some(oldPanic => oldPanic.id === newPanic.id)
     );
 
-    // Show green toast for new reports
+    // Show green toast for new reports - UPDATED: show untuk auto dan manual refresh
     if (newReports.length > 0) {
+      const refreshType = isAutoRefresh ? "Auto-refresh" : "Manual refresh";
       toast.success(`${newReports.length} Laporan Baru Masuk!`, {
-        description: `${newReports.length} laporan baru memerlukan perhatian Anda`,
+        description: `${refreshType}: ${newReports.length} laporan baru memerlukan perhatian Anda`,
         duration: 5000,
+        style: {
+          background: 'rgb(34, 197, 94)',
+          color: 'white',
+          border: '1px solid rgb(22, 163, 74)',
+        },
+        className: 'dark:bg-green-600 dark:text-white dark:border-green-500',
         action: {
           label: "Lihat",
           onClick: () => router.push("/admin/reports")
@@ -489,11 +493,18 @@ export default function Dashboard() {
       });
     }
 
-    // Show red toast for new panic alerts
+    // Show red toast for new panic alerts - UPDATED: show untuk auto dan manual refresh
     if (newPanics.length > 0) {
+      const refreshType = isAutoRefresh ? "Auto-refresh" : "Manual refresh";
       toast.error(`${newPanics.length} Panic Alert Baru!`, {
-        description: `${newPanics.length} panic alert darurat memerlukan respon segera`,
+        description: `${refreshType}: ${newPanics.length} panic alert darurat memerlukan respon segera`,
         duration: 7000,
+        style: {
+          background: 'rgb(239, 68, 68)',
+          color: 'white',
+          border: '1px solid rgb(220, 38, 38)',
+        },
+        className: 'dark:bg-red-600 dark:text-white dark:border-red-500',
         action: {
           label: "Lihat",
           onClick: () => router.push("/admin/panic-reports")
@@ -501,19 +512,40 @@ export default function Dashboard() {
       });
     }
 
-    // Check for new volunteers (optional notification)
+    // Check for new volunteers (optional notification) - UPDATED: show untuk auto dan manual refresh
     const newVolunteers = newData.volunteers.filter(newVolunteer => 
       !previousData.volunteers.some(oldVolunteer => oldVolunteer.id === newVolunteer.id)
     );
 
     if (newVolunteers.length > 0) {
+      const refreshType = isAutoRefresh ? "Auto-refresh" : "Manual refresh";
       toast.info(`${newVolunteers.length} Relawan Baru Bergabung`, {
-        description: `${newVolunteers.length} relawan baru telah bergabung ke sistem`,
+        description: `${refreshType}: ${newVolunteers.length} relawan baru telah bergabung ke sistem`,
         duration: 4000,
+        style: {
+          background: 'rgb(59, 130, 246)',
+          color: 'white',
+          border: '1px solid rgb(37, 99, 235)',
+        },
+        className: 'dark:bg-blue-600 dark:text-white dark:border-blue-500',
         action: {
           label: "Lihat",
           onClick: () => router.push("/admin/volunteers")
         }
+      });
+    }
+
+    // Show info toast saat manual refresh jika tidak ada data baru
+    if (!isAutoRefresh && newReports.length === 0 && newPanics.length === 0 && newVolunteers.length === 0) {
+      toast.info("Data Sudah Terbaru", {
+        description: "Tidak ada laporan, panic alert, atau relawan baru saat ini",
+        duration: 3000,
+        style: {
+          background: 'rgb(75, 85, 99)',
+          color: 'white',
+          border: '1px solid rgb(55, 65, 81)',
+        },
+        className: 'dark:bg-gray-600 dark:text-white dark:border-gray-500'
       });
     }
   }, [router]);
@@ -667,8 +699,8 @@ export default function Dashboard() {
             </p>
             <div className="flex items-center space-x-4 mt-3">
               <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                <div className={`w-2 h-2 rounded-full ${isTabVisible ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                <span>Auto-refresh {isTabVisible ? 'aktif' : 'dijeda'}</span>
+                <div className={`w-2 h-2 rounded-full ${refreshIntervalRef.current ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span>Auto-refresh {refreshIntervalRef.current ? 'aktif' : 'nonaktif'}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                 <Activity className="w-4 h-4" />
@@ -686,7 +718,7 @@ export default function Dashboard() {
             <Button
               onClick={() => {
                 setIsRefreshing(true);
-                fetchDashboardData(false);
+                fetchDashboardData(false); // Manual refresh dengan parameter false
               }}
               variant="outline"
               className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 w-full sm:w-auto transition-theme"
@@ -921,14 +953,14 @@ export default function Dashboard() {
         >
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 transition-theme">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isTabVisible ? 'animate-pulse bg-green-500' : 'bg-orange-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${refreshIntervalRef.current ? 'animate-pulse bg-green-500' : 'bg-red-500'}`}></div>
               <div className="text-sm">
                 <p className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
                   <RefreshCw className={`h-3 w-3 mr-1 ${refreshIntervalRef.current ? 'animate-spin' : ''}`} />
-                  Auto-refresh {isTabVisible ? 'aktif' : 'dijeda'}
+                  Auto-refresh {refreshIntervalRef.current ? 'aktif' : 'nonaktif'}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 text-xs">
-                  {isTabVisible ? 'Setiap 30 detik' : 'Tab tidak aktif'} • Terakhir: {lastRefresh.toLocaleTimeString('id-ID')}
+                  Setiap 30 detik • Terakhir: {lastRefresh.toLocaleTimeString('id-ID')}
                 </p>
               </div>
             </div>

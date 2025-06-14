@@ -195,7 +195,13 @@ export default function VolunteerForm({
         {
           description: mode === "create" 
             ? `${data.name} telah ditambahkan sebagai relawan`
-            : `Data ${data.name} telah diperbarui`
+            : `Data ${data.name} telah diperbarui`,
+          style: {
+            background: 'rgb(34, 197, 94)',
+            color: 'white',
+            border: '1px solid rgb(22, 163, 74)',
+          },
+          className: 'dark:bg-green-600 dark:text-white dark:border-green-500'
         }
       );
 
@@ -211,7 +217,13 @@ export default function VolunteerForm({
       setError(errorMessage);
       
       toast.error("Gagal menyimpan relawan", {
-        description: errorMessage
+        description: errorMessage,
+        style: {
+          background: 'rgb(239, 68, 68)',
+          color: 'white',
+          border: '1px solid rgb(220, 38, 38)',
+        },
+        className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
       });
     } finally {
       setIsSubmitting(false);

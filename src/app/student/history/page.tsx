@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import StudentWrapper from '@/components/shared/StudentWrapper';
 import { 
   RefreshCw, 
   Filter, 
@@ -20,7 +21,11 @@ import {
   ChevronRight,
   Eye,
   MessageSquare,
-  X
+  X,
+  History,
+  TrendingUp,
+  BarChart3,
+  Activity
 } from "lucide-react";
 import { getAccessToken, isAuthenticated } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -36,6 +41,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { Label } from "@radix-ui/react-label";
 
 // Interface untuk user report
 interface UserReport {
@@ -321,390 +327,499 @@ export default function ReportHistoryPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-6"
-      >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Histori Laporan Saya</h1>
-        <p className="text-gray-500">Lihat status dan feedback dari laporan yang telah Anda kirimkan</p>
-        {reportsData && (
-          <p className="text-sm text-gray-600 mt-1">
-            Total {reportsData.total} laporan
-          </p>
-        )}
-      </motion.div>
+    <StudentWrapper>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          {/* Header without icon */}
+          <motion.div 
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-8"
+          >
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Histori Laporan Saya
+            </h1>
+            <p className="text-gray-600 max-w-lg mx-auto">
+              Pantau status dan perkembangan laporan yang telah Anda kirimkan
+            </p>
+          </motion.div>
 
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6"
-      >
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 border-b">
-            <CardTitle className="text-lg font-bold text-gray-800 flex items-center">
-              <Filter className="h-5 w-5 mr-2" />
-              Filter & Pencarian
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <Input
-                  placeholder="Cari laporan..."
-                  className="pl-10 border-gray-200"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          {/* Stats Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          >
+          {[
+            {
+              label: "Total", 
+              value: reportsData?.total || 0, 
+              icon: FileText, 
+              color: "text-blue-600",
+              bg: "bg-blue-50"
+            },
+            { 
+              label: "Menunggu", 
+              value: filteredReports.filter(r => r.status === 'pending').length, 
+              icon: Clock, 
+              color: "text-yellow-600",
+              bg: "bg-yellow-50"
+            },
+            { 
+              label: "Proses", 
+              value: filteredReports.filter(r => r.status === 'in_progress').length, 
+              icon: AlertCircle, 
+              color: "text-orange-600",
+              bg: "bg-orange-50"
+            },
+            { 
+              label: "Selesai", 
+              value: filteredReports.filter(r => r.status === 'resolved').length, 
+              icon: CheckCircle, 
+              color: "text-green-600",
+              bg: "bg-green-50"
+            }
+          ].map((stat, index) => (
+            <div
+              key={stat.label}
+              className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${stat.bg}`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
               </div>
-              
-              {/* Status Filter */}
-              <Select
-                value={statusFilter}
-                onValueChange={handleStatusFilterChange}
-                options={statusOptions}
-                placeholder="Filter Status"
-                className="border-gray-200"
-              />
-              
-              {/* Type Filter */}
-              <Select
-                value={typeFilter}
-                onValueChange={handleTypeFilterChange}
-                options={problemTypeOptions}
-                placeholder="Filter Jenis"
-                className="border-gray-200"
-              />
-              
-              {/* Refresh Button */}
-              <Button
-                onClick={() => fetchUserReports()}
-                variant="outline"
-                className="border-gray-200"
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Segarkan
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          ))}
+          </motion.div>
 
-      {/* Reports List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 border-b">
-            <CardTitle className="text-lg font-bold text-gray-800">Daftar Laporan</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex justify-center items-center p-12">
-                <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
-              </div>
-            ) : filteredReports.length === 0 ? (
-              <div className="text-center p-12">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-800 mb-1">
-                  {searchQuery || statusFilter || typeFilter ? "Tidak ada laporan yang cocok" : "Belum ada laporan"}
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  {searchQuery || statusFilter || typeFilter 
-                    ? "Coba ubah kriteria pencarian atau filter" 
-                    : "Anda belum pernah mengirim laporan"}
-                </p>
-                {!(searchQuery || statusFilter || typeFilter) && (
-                  <Button 
-                    onClick={() => router.push('/student/report')}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Buat Laporan Pertama
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {filteredReports.map((report) => {
-                  const status = getStatusBadge(report.status);
-                  return (
-                    <motion.div
-                      key={report.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-6 hover:bg-gray-50 transition-colors"
+          {/* Filters */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mb-6"
+          >
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader className="pb-4 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Filter className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-gray-900">Filter & Pencarian</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Temukan laporan dengan mudah
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Pencarian</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                      <Input
+                        placeholder="Cari ID, deskripsi, lokasi..."
+                        className="pl-10 h-10 border-gray-300"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={handleStatusFilterChange}
+                      options={statusOptions}
+                      placeholder="Semua Status"
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Jenis</Label>
+                    <Select
+                      value={typeFilter}
+                      onValueChange={handleTypeFilterChange}
+                      options={problemTypeOptions}
+                      placeholder="Semua Jenis"
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Update Data</Label>
+                    <Button
+                      onClick={() => fetchUserReports()}
+                      className="w-full h-10 bg-blue-600 hover:bg-blue-700"
+                      disabled={isRefreshing}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Badge className={`${status.color} flex items-center px-2 py-1 text-xs font-normal border`}>
-                              {status.icon}
-                              <span>{status.text}</span>
-                            </Badge>
-                            <span className="text-sm text-gray-500">#{report.id}</span>
-                            <span className="text-sm text-gray-500">
-                              {formatDateTime(report.created_at)}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <div className="mb-2">
-                                <span className="text-sm font-medium text-gray-700">Jenis Masalah:</span>
-                                <Badge variant="outline" className="ml-2 capitalize">
-                                  {formatProblemType(report.problem_type)}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center text-sm text-gray-600 mb-2">
-                                <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                                <span>{report.location}</span>
+                      {isRefreshing ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Refresh
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Reports List without icon */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader className="pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-gray-900">Daftar Laporan</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      {filteredReports.length} laporan ditemukan
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                    <Activity className="w-4 h-4 mr-1" />
+                    Live
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex justify-center items-center p-12">
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4" />
+                      <p className="text-gray-600">Memuat histori laporan...</p>
+                    </div>
+                  </div>
+                ) : filteredReports.length === 0 ? (
+                  <div className="text-center p-12">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="space-y-4"
+                    >
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                        <FileText className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {searchQuery || statusFilter || typeFilter ? "Tidak ada laporan yang cocok" : "Belum ada laporan"}
+                        </h3>
+                        <p className="text-gray-600">
+                          {searchQuery || statusFilter || typeFilter 
+                            ? "Coba ubah kriteria pencarian atau filter" 
+                            : "Mulai berkontribusi untuk keamanan kampus!"}
+                        </p>
+                      </div>
+                      {!(searchQuery || statusFilter || typeFilter) && (
+                        <Button 
+                          onClick={() => router.push('/student/report')}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Buat Laporan Pertama
+                        </Button>
+                      )}
+                    </motion.div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {filteredReports.map((report, index) => {
+                      const status = getStatusBadge(report.status);
+                      return (
+                        <motion.div
+                          key={report.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="p-6 hover:bg-gray-50 transition-all duration-300"
+                        >
+                          <div className="space-y-4">
+                            {/* Normal Header */}
+                            <div className="flex flex-wrap items-center gap-3">
+                              <Badge className={`${status.color} flex items-center px-3 py-1 text-sm font-medium border shadow-sm`}>
+                                {status.icon}
+                                <span className="ml-1">{status.text}</span>
+                              </Badge>
+                              <Badge variant="outline" className="text-gray-600">
+                                #{report.id}
+                              </Badge>
+                              <div className="flex items-center text-sm text-gray-500">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {formatDateTime(report.created_at)}
                               </div>
                             </div>
                             
-                            <div>
-                              <div className="mb-2">
-                                <span className="text-sm font-medium text-gray-700">Deskripsi:</span>
-                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                  {report.description}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {report.admin_notes && (
-                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                              <div className="flex items-start">
-                                <MessageSquare className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                            {/* Normal Content */}
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-semibold text-gray-700">Jenis:</span>
+                                  <Badge variant="outline">
+                                    {formatProblemType(report.problem_type)}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-start space-x-3">
+                                  <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <span className="text-sm font-semibold text-gray-700">Lokasi:</span>
+                                    <p className="text-sm text-gray-600">{report.location}</p>
+                                  </div>
+                                </div>
                                 <div>
-                                  <p className="text-sm font-medium text-blue-800">Feedback dari Admin/Relawan:</p>
-                                  <p className="text-sm text-blue-700 mt-1">{report.admin_notes}</p>
+                                  <span className="text-sm font-semibold text-gray-700">Deskripsi:</span>
+                                  <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                                    {report.description}
+                                  </p>
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewReport(report)}
-                            className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Lihat Detail
-                          </Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+                            
+                            {/* Normal Admin Notes */}
+                            {report.admin_notes && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">
+                                      Feedback dari Tim
+                                    </p>
+                                    <p className="text-sm text-blue-700">{report.admin_notes}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Normal Action Button */}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleViewReport(report)}
+                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Detail
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
-      {/* Pagination */}
-      {reportsData && reportsData.last_page > 1 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mt-6"
-        >
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-600">
-                  Halaman {reportsData.current_page} dari {reportsData.last_page}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(reportsData.current_page - 1)}
-                    disabled={!reportsData.prev_page_url}
-                    className="border-gray-200"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Sebelumnya
-                  </Button>
-                  
-                  {/* Page Numbers */}
-                  <div className="flex gap-1">
-                    {reportsData.links
-                      .filter(link => link.label !== '&laquo; Previous' && link.label !== 'Next &raquo;')
-                      .map((link, index) => (
-                        <Button
-                          key={index}
-                          variant={link.active ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => link.url && handlePageChange(parseInt(link.label))}
-                          disabled={!link.url || isNaN(parseInt(link.label))}
-                          className={`w-10 h-10 p-0 ${link.active ? 'bg-blue-600' : 'border-gray-200'}`}
-                        >
-                          {link.label}
-                        </Button>
-                      ))}
+          {/* Compact Pagination */}
+          {reportsData && reportsData.last_page > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="mt-6"
+            >
+              <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Menampilkan {reportsData.from}-{reportsData.to} dari {reportsData.total} laporan
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => handlePageChange(reportsData.current_page - 1)}
+                        disabled={!reportsData.prev_page_url}
+                        className="border-gray-300 dark:border-gray-600"
+                        size="sm"
+                      >
+                        <ChevronLeft className="h-3 w-3 mr-1" />
+                        Prev
+                      </Button>
+                      
+                      <div className="flex gap-1">
+                        {reportsData.links
+                          .filter(link => link.label !== '&laquo; Previous' && link.label !== 'Next &raquo;')
+                          .map((link, index) => (
+                            <Button
+                              key={index}
+                              variant={link.active ? "default" : "outline"}
+                              onClick={() => link.url && handlePageChange(parseInt(link.label))}
+                              disabled={!link.url || isNaN(parseInt(link.label))}
+                              className={`w-8 h-8 ${
+                                link.active 
+                                  ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600' 
+                                  : 'border-gray-300 dark:border-gray-600'
+                              }`}
+                              size="sm"
+                            >
+                              {link.label}
+                            </Button>
+                          ))}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => handlePageChange(reportsData.current_page + 1)}
+                        disabled={!reportsData.next_page_url}
+                        className="border-gray-300 dark:border-gray-600"
+                        size="sm"
+                      >
+                        Next
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Compact Detail Modal */}
+          <AnimatePresence>
+            {isDetailOpen && (
+              <motion.div 
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsDetailOpen(false)}
+              >
+                <motion.div 
+                  className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto shadow-2xl border border-gray-200 dark:border-gray-700"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-between items-center z-10">
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+                      {isLoadingDetail ? "Memuat Detail..." : `Detail Laporan ${selectedReport ? `#${selectedReport.id}` : ""}`}
+                    </h2>
+                    <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(reportsData.current_page + 1)}
-                    disabled={!reportsData.next_page_url}
-                    className="border-gray-200"
-                  >
-                    Selanjutnya
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Detail Modal */}
-      <AnimatePresence>
-        {isDetailOpen && (
-          <motion.div 
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsDetailOpen(false)}
-          >
-            <motion.div 
-              className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-                <h2 className="text-xl font-bold text-gray-800">
-                  {isLoadingDetail ? "Memuat Detail..." : `Detail Laporan ${selectedReport ? `#${selectedReport.id}` : ""}`}
-                </h2>
-                <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              
-              {isLoadingDetail ? (
-                <div className="flex justify-center items-center p-12">
-                  <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
-               </div>
-             ) : selectedReport ? (
-               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                   <h3 className="text-lg font-semibold text-gray-700 mb-3">Informasi Laporan</h3>
-                   
-                   <div className="space-y-4">
+                  {isLoadingDetail ? (
+                    <div className="flex justify-center items-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                   </div>
+                 ) : selectedReport ? (
+                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div>
-                       <p className="text-sm font-medium text-gray-500">Status</p>
-                       <Badge className={`mt-1 ${getStatusBadge(selectedReport.status).color} px-2.5 py-1 text-xs font-normal border flex items-center w-fit`}>
-                         {getStatusBadge(selectedReport.status).icon}
-                         <span>{getStatusBadge(selectedReport.status).text}</span>
-                       </Badge>
-                     </div>
-                     
-                     <div>
-                       <p className="text-sm font-medium text-gray-500">Tanggal Laporan</p>
-                       <p className="text-sm text-gray-900 mt-1">{formatDateTime(selectedReport.created_at)}</p>
-                     </div>
-                     
-                     <div>
-                       <p className="text-sm font-medium text-gray-500">Jenis Masalah</p>
-                       <Badge variant="outline" className="mt-1 capitalize">
-                         {formatProblemType(selectedReport.problem_type)}
-                       </Badge>
-                     </div>
-                     
-                     <div>
-                       <p className="text-sm font-medium text-gray-500">Lokasi</p>
-                       <div className="flex items-center mt-1 text-sm text-gray-900">
-                         <MapPin className="h-4 w-4 text-gray-400 mr-1.5" />
-                         <span>{selectedReport.location}</span>
-                       </div>
-                     </div>
-                     
-                     <div>
-                       <p className="text-sm font-medium text-gray-500">Deskripsi</p>
-                       <p className="text-sm text-gray-900 mt-1 whitespace-pre-line">{selectedReport.description}</p>
-                     </div>
-                     
-                     {selectedReport.admin_notes && (
-                       <div>
-                         <p className="text-sm font-medium text-gray-500">Feedback dari Admin/Relawan</p>
-                         <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                           <p className="text-sm text-blue-800 whitespace-pre-line">{selectedReport.admin_notes}</p>
+                       <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">Informasi Laporan</h3>
+                       
+                       <div className="space-y-3">
+                         <div>
+                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</p>
+                           <Badge className={`mt-1 ${getStatusBadge(selectedReport.status).color} px-2 py-1 text-xs font-normal border flex items-center w-fit`}>
+                             {getStatusBadge(selectedReport.status).icon}
+                             <span>{getStatusBadge(selectedReport.status).text}</span>
+                           </Badge>
                          </div>
+                         
+                         <div>
+                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Tanggal Laporan</p>
+                           <p className="text-sm text-gray-900 dark:text-white mt-1">{formatDateTime(selectedReport.created_at)}</p>
+                         </div>
+                         
+                         <div>
+                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Jenis Masalah</p>
+                           <Badge variant="outline" className="mt-1 capitalize">
+                             {formatProblemType(selectedReport.problem_type)}
+                           </Badge>
+                         </div>
+                         
+                         <div>
+                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Lokasi</p>
+                           <div className="flex items-center mt-1 text-sm text-gray-900 dark:text-white">
+                             <MapPin className="h-3 w-3 text-gray-400 mr-1.5" />
+                             <span>{selectedReport.location}</span>
+                           </div>
+                         </div>
+                         
+                         <div>
+                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Deskripsi</p>
+                           <p className="text-sm text-gray-900 dark:text-white mt-1 whitespace-pre-line">{selectedReport.description}</p>
+                         </div>
+                         
+                         {selectedReport.admin_notes && (
+                           <div>
+                             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Feedback dari Tim</p>
+                             <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                               <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-line">{selectedReport.admin_notes}</p>
+                             </div>
+                           </div>
+                         )}
                        </div>
-                     )}
+                     </div>
+                     
+                     <div>
+                       <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">Bukti Foto</h3>
+                       <div className="bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border">
+                         {selectedReport.photo_url ? (
+                           <img
+                             src={selectedReport.photo_url}
+                             alt={`Laporan #${selectedReport.id}`}
+                             className="w-full object-contain max-h-[300px]"
+                           />
+                         ) : (
+                           <div className="flex items-center justify-center h-48 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
+                             <p className="text-sm">Tidak ada gambar tersedia</p>
+                           </div>
+                         )}
+                       </div>
+                     </div>
                    </div>
-                 </div>
+                 ) : (
+                   <div className="flex justify-center items-center p-8">
+                     <div className="text-center">
+                       <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-4" />
+                       <p className="text-gray-500 dark:text-gray-400">Gagal memuat detail laporan</p>
+                     </div>
+                   </div>
+                 )}
                  
-                 <div>
-                   <h3 className="text-lg font-semibold text-gray-700 mb-3">Bukti Foto</h3>
-                   <div className="bg-gray-100 rounded-lg overflow-hidden border">
-                     {selectedReport.photo_url ? (
-                       <img
-                         src={selectedReport.photo_url}
-                         alt={`Laporan #${selectedReport.id}`}
-                         className="w-full object-contain max-h-[400px]"
-                       />
-                     ) : (
-                       <div className="flex items-center justify-center h-64 bg-gray-100 text-gray-400">
-                         <p>Tidak ada gambar tersedia</p>
-                       </div>
-                     )}
-                   </div>
+                 <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-end">
+                   <Button variant="outline" onClick={() => setIsDetailOpen(false)} size="sm">
+                     Tutup
+                   </Button>
                  </div>
-               </div>
-             ) : (
-               <div className="flex justify-center items-center p-12">
-                 <div className="text-center">
-                   <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                   <p className="text-gray-500">Gagal memuat detail laporan</p>
-                 </div>
-               </div>
-             )}
-             
-             <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end">
-               <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
-                 Tutup
-               </Button>
-             </div>
-           </motion.div>
-         </motion.div>
-       )}
-     </AnimatePresence>
+               </motion.div>
+             </motion.div>
+           )}
+         </AnimatePresence>
 
-     {/* Add CSS for line-clamp */}
-     <style jsx>{`
-       .line-clamp-2 {
-         display: -webkit-box;
-         -webkit-line-clamp: 2;
-         -webkit-box-orient: vertical;
-         overflow: hidden;
-       }
-     `}</style>
-   </div>
+         {/* Add CSS for line-clamp */}
+         <style jsx>{`
+           .line-clamp-2 {
+             display: -webkit-box;
+             -webkit-line-clamp: 2;
+             -webkit-box-orient: vertical;
+             overflow: hidden;
+           }
+         `}</style>
+       </div>
+     </div>
+   </StudentWrapper>
  );
 }

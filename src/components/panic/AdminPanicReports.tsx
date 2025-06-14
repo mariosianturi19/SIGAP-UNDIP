@@ -668,14 +668,14 @@ export default function AdminPanicReports() {
                     </motion.div>
                   </div>
                 ) : (
-                  // Simplified List View with Dark Mode
+                  // Improved List View with better separation and Dark Mode
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     <motion.div
                       variants={containerVariants}
                       initial="hidden"
                       animate="visible"
                     >
-                      {filteredReports.map((report) => {
+                      {filteredReports.map((report, index) => {
                         const status = getStatusBadge(report.status);
                         const priority = getPriorityLevel(report.created_at);
                         
@@ -683,95 +683,144 @@ export default function AdminPanicReports() {
                           <motion.div
                             key={report.id}
                             variants={itemVariants}
-                            className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                            className={`
+                              p-4 sm:p-6 
+                              hover:bg-gray-50 dark:hover:bg-gray-800/50 
+                              transition-all duration-200
+                              border-l-4 border-transparent hover:border-red-300 dark:hover:border-red-600
+                              ${index === 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}
+                              relative
+                              group
+                            `}
                           >
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <Badge className={`${status.color} flex items-center px-2 py-1 text-xs font-medium border`}>
-                                    {status.icon}
-                                    <span className="ml-1">{status.text}</span>
-                                  </Badge>
-                                  <Badge className={`${priority.color} flex items-center px-2 py-1 text-xs font-medium border`}>
-                                    <TrendingUp className="h-3 w-3 mr-1" />
-                                    {priority.text}
-                                  </Badge>
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">#{report.id}</span>
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                      <User className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                                      <span className="font-medium">{report.user.name}</span>
-                                    </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 ml-6 space-y-1">
-                                      <div className="flex items-center">
-                                        <Mail className="h-3 w-3 mr-1" />
-                                        {report.user.email}
-                                      </div>
-                                      {report.user.no_telp && (
-                                        <div className="flex items-center">
-                                          <Phone className="h-3 w-3 mr-1" />
-                                          {report.user.no_telp}
-                                        </div>
-                                      )}
+                            {/* Subtle background highlight on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-red-50/50 to-transparent dark:from-red-900/10 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                            
+                            {/* Content */}
+                            <div className="relative z-10">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div className="flex-1">
+                                  {/* Header with badges and ID */}
+                                  <div className="flex items-center gap-3 mb-4">
+                                    <Badge className={`${status.color} flex items-center px-3 py-1.5 text-xs font-medium border shadow-sm`}>
+                                      {status.icon}
+                                      <span className="ml-1">{status.text}</span>
+                                    </Badge>
+                                    <Badge className={`${priority.color} flex items-center px-3 py-1.5 text-xs font-medium border shadow-sm`}>
+                                      <TrendingUp className="h-3 w-3 mr-1" />
+                                      {priority.text}
+                                    </Badge>
+                                    <div className="flex items-center bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-md">
+                                      <span className="text-xs font-mono text-gray-700 dark:text-gray-300">#{report.id}</span>
                                     </div>
                                   </div>
                                   
-                                  <div>
-                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                      <Calendar className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                                      <span>{formatDateTime(report.created_at)}</span>
+                                  {/* Main content grid */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* User Information */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-full mr-3">
+                                          <User className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <div>
+                                          <div className="font-medium text-gray-900 dark:text-white">{report.user.name}</div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">Pelapor</div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="ml-11 space-y-2">
+                                        <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                                          <Mail className="h-3 w-3 mr-2 text-gray-400 dark:text-gray-500" />
+                                          <span className="truncate">{report.user.email}</span>
+                                        </div>
+                                        {report.user.no_telp && (
+                                          <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                                            <Phone className="h-3 w-3 mr-2 text-gray-400 dark:text-gray-500" />
+                                            <span>{report.user.no_telp}</span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                      <MapPin className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
-                                      <button
-                                        onClick={() => openInMaps(report.latitude, report.longitude)}
-                                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline flex items-center"
-                                      >
-                                        {report.latitude.toFixed(6)}, {report.longitude.toFixed(6)}
-                                        <ExternalLink className="h-3 w-3 ml-1" />
-                                      </button>
+                                    
+                                    {/* Time and Location Information */}
+                                    <div className="space-y-3">
+                                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900/20 rounded-full mr-3">
+                                          <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div>
+                                          <div className="font-medium text-gray-900 dark:text-white">{formatDateTime(report.created_at)}</div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">Waktu laporan</div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="ml-11">
+                                        <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                                          <MapPin className="h-3 w-3 mr-2 text-gray-400 dark:text-gray-500" />
+                                          <button
+                                            onClick={() => openInMaps(report.latitude, report.longitude)}
+                                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline flex items-center group"
+                                          >
+                                            <span className="font-mono">{report.latitude.toFixed(6)}, {report.longitude.toFixed(6)}</span>
+                                            <ExternalLink className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+                                  
+                                  {/* Location Description */}
+                                  {report.location_description && (
+                                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                      <div className="flex items-start">
+                                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                                        <div>
+                                          <div className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Deskripsi Lokasi</div>
+                                          <div className="text-sm text-blue-800 dark:text-blue-400">{report.location_description}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Handler Information */}
+                                  {report.handler && (
+                                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                      <div className="flex items-start">
+                                        <Shield className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 mr-2 flex-shrink-0" />
+                                        <div>
+                                          <div className="text-sm font-medium text-green-900 dark:text-green-300 mb-1">Ditangani oleh</div>
+                                          <div className="text-sm text-green-800 dark:text-green-400">
+                                            <span className="font-medium">{report.handler.name}</span>
+                                            {report.handled_at && (
+                                              <span className="text-green-600 dark:text-green-400 ml-2">
+                                                pada {formatDateTime(report.handled_at)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                                 
-                                {report.location_description && (
-                                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-                                    <div className="text-sm text-blue-800 dark:text-blue-400">
-                                      <span className="font-medium">Deskripsi Lokasi:</span> {report.location_description}
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                {report.handler && (
-                                  <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-                                    <div className="text-sm text-green-800 dark:text-green-400">
-                                      <span className="font-medium">Ditangani oleh:</span> {report.handler.name}
-                                      {report.handled_at && (
-                                        <span className="text-green-600 dark:text-green-400 ml-2">
-                                          pada {formatDateTime(report.handled_at)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Action Button */}
-                              <div className="flex justify-center lg:w-48">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openInMaps(report.latitude, report.longitude)}
-                                  className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                >
-                                  <MapPin className="h-4 w-4 mr-2" />
-                                  Lihat di Maps
-                                </Button>
+                                {/* Action Button */}
+                                <div className="flex justify-center lg:w-48 lg:flex-col lg:items-end">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openInMaps(report.latitude, report.longitude)}
+                                    className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 shadow-sm hover:shadow"
+                                  >
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                    Lihat di Maps
+                                  </Button>
+                                </div>
                               </div>
                             </div>
+                            
+                            {/* Bottom border for extra separation */}
+                            <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
                           </motion.div>
                         );
                       })}

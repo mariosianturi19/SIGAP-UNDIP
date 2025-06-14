@@ -58,15 +58,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import VolunteerForm from "./VolunteerForm";
 
 // Perbarui interface agar sesuai dengan respons API sebenarnya
 interface Volunteer {
   id: number;
   name: string;
   email: string;
+  role: string;
   nik: string;
   no_telp: string;
-  role: string;
+  email_verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +87,8 @@ export default function VolunteerManagement() {
   const [selectedVolunteer, setSelectedVolunteer] = useState<Volunteer | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showVolunteerForm, setShowVolunteerForm] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     fetchVolunteers();
@@ -96,7 +100,14 @@ export default function VolunteerManagement() {
     try {
       const token = await getAccessToken();
       if (!token) {
-        toast.error("Autentikasi diperlukan");
+        toast.error("Autentikasi diperlukan", {
+          style: {
+            background: 'rgb(239, 68, 68)',
+            color: 'white',
+            border: '1px solid rgb(220, 38, 38)',
+          },
+          className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
+        });
         return;
       }
 
@@ -118,7 +129,14 @@ export default function VolunteerManagement() {
       
     } catch (error) {
       console.error("Error mengambil data relawan:", error);
-      toast.error("Gagal memuat data relawan");
+      toast.error("Gagal memuat data relawan", {
+        style: {
+          background: 'rgb(239, 68, 68)',
+          color: 'white',
+          border: '1px solid rgb(220, 38, 38)',
+        },
+        className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
+      });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -131,7 +149,14 @@ export default function VolunteerManagement() {
     try {
       const token = await getAccessToken();
       if (!token) {
-        toast.error("Autentikasi diperlukan");
+        toast.error("Autentikasi diperlukan", {
+          style: {
+            background: 'rgb(239, 68, 68)',
+            color: 'white',
+            border: '1px solid rgb(220, 38, 38)',
+          },
+          className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
+        });
         return;
       }
 
@@ -147,12 +172,26 @@ export default function VolunteerManagement() {
         throw new Error(errorData.message || "Gagal menghapus relawan");
       }
 
-      toast.success("Relawan berhasil dihapus");
+      toast.success("Relawan berhasil dihapus", {
+        style: {
+          background: 'rgb(34, 197, 94)',
+          color: 'white',
+          border: '1px solid rgb(22, 163, 74)',
+        },
+        className: 'dark:bg-green-600 dark:text-white dark:border-green-500'
+      });
       await fetchVolunteers();
       
     } catch (error) {
       console.error("Error menghapus relawan:", error);
-      toast.error(error instanceof Error ? error.message : "Gagal menghapus relawan");
+      toast.error(error instanceof Error ? error.message : "Gagal menghapus relawan", {
+        style: {
+          background: 'rgb(239, 68, 68)',
+          color: 'white',
+          border: '1px solid rgb(220, 38, 38)',
+        },
+        className: 'dark:bg-red-600 dark:text-white dark:border-red-500'
+      });
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
@@ -263,6 +302,24 @@ export default function VolunteerManagement() {
     .filter(volunteer => roleFilter === "all" || volunteer.role === roleFilter)
     .sort(sortVolunteers);
 
+  const handleCreateVolunteer = () => {
+    setFormMode('create');
+    setSelectedVolunteer(null);
+    setShowVolunteerForm(true);
+  };
+
+  const handleEditVolunteer = (volunteer: Volunteer) => {
+    setFormMode('edit');
+    setSelectedVolunteer(volunteer);
+    setShowVolunteerForm(true);
+  };
+
+  const onVolunteerSaved = () => {
+    setShowVolunteerForm(false);
+    setSelectedVolunteer(null);
+    fetchVolunteers();
+  };
+
   const handleDeleteClick = (volunteer: Volunteer) => {
     setSelectedVolunteer(volunteer);
     setShowDeleteDialog(true);
@@ -342,6 +399,7 @@ export default function VolunteerManagement() {
               Segarkan Data
             </Button>
             <Button
+              onClick={handleCreateVolunteer}
               className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
               size="sm"
             >
@@ -663,7 +721,10 @@ export default function VolunteerManagement() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                    <DropdownMenuItem className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <DropdownMenuItem 
+                                      onClick={() => handleEditVolunteer(volunteer)}
+                                      className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
                                       <Edit className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                                       Edit
                                     </DropdownMenuItem>
@@ -770,7 +831,10 @@ export default function VolunteerManagement() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                    <DropdownMenuItem className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <DropdownMenuItem 
+                                      onClick={() => handleEditVolunteer(volunteer)}
+                                      className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
                                       <Edit className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                                       Edit
                                     </DropdownMenuItem>
@@ -797,6 +861,20 @@ export default function VolunteerManagement() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Volunteer Form Dialog */}
+      {showVolunteerForm && (
+        <VolunteerForm
+          mode={formMode}
+          volunteer={selectedVolunteer}
+          isOpen={showVolunteerForm}
+          onClose={() => {
+            setShowVolunteerForm(false);
+            setSelectedVolunteer(null);
+          }}
+          onSave={onVolunteerSaved}
+        />
+      )}
 
       {/* Delete Confirmation Dialog with Dark Mode */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

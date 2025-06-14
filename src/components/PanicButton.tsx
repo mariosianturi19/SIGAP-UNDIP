@@ -248,12 +248,12 @@ const PanicButton: React.FC = () => {
         <div className="relative">
           <motion.button
             disabled
-            className="relative z-10 w-44 h-44 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-gray-400 cursor-not-allowed"
+            className="relative z-10 w-52 h-52 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-gray-400 cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
-              <MapPin className="h-10 w-10 mb-2" />
-              <span className="text-lg tracking-wide">AKSES LOKASI</span>
-              <span className="text-sm mt-1">DIPERLUKAN</span>
+              <MapPin className="h-12 w-12 mb-2" />
+              <span className="text-xl tracking-wide">AKSES LOKASI</span>
+              <span className="text-base mt-1">DIPERLUKAN</span>
             </div>
           </motion.button>
         </div>
@@ -282,17 +282,17 @@ const PanicButton: React.FC = () => {
         <div className="relative">
           <motion.button
             disabled
-            className="relative z-10 w-44 h-44 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-blue-500 cursor-not-allowed"
+            className="relative z-10 w-52 h-52 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-blue-500 cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
               <motion.div 
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 2 }}
               >
-                <MapPin className="h-10 w-10 mb-2" />
+                <MapPin className="h-12 w-12 mb-2" />
               </motion.div>
-              <span className="text-lg tracking-wide">MENGAKSES</span>
-              <span className="text-sm mt-1">Lokasi...</span>
+              <span className="text-xl tracking-wide">MENGAKSES</span>
+              <span className="text-base mt-1">Lokasi...</span>
             </div>
           </motion.button>
         </div>
@@ -310,12 +310,12 @@ const PanicButton: React.FC = () => {
         <div className="relative">
           <motion.button
             disabled
-            className="relative z-10 w-44 h-44 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-red-400 cursor-not-allowed"
+            className="relative z-10 w-52 h-52 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-red-400 cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
-              <AlertTriangle className="h-10 w-10 mb-2" />
-              <span className="text-lg tracking-wide">ERROR</span>
-              <span className="text-sm mt-1">Akses Gagal</span>
+              <AlertTriangle className="h-12 w-12 mb-2" />
+              <span className="text-xl tracking-wide">ERROR</span>
+              <span className="text-base mt-1">Akses Gagal</span>
             </div>
           </motion.button>
         </div>
@@ -348,12 +348,12 @@ const PanicButton: React.FC = () => {
             disabled={isSendingAlert || locationLoading}
             whileHover={!isSendingAlert && !locationLoading ? { scale: 1.03 } : {}}
             whileTap={!isSendingAlert && !locationLoading ? { scale: 0.97 } : {}}
-            className="relative z-10 w-44 h-44 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-amber-600"
+            className="relative z-10 w-52 h-52 rounded-full flex items-center justify-center text-white font-bold shadow-lg bg-amber-600"
           >
             <div className="flex flex-col items-center">
-              <AlertTriangle className="h-10 w-10 mb-2" />
-              <span className="text-lg tracking-wide">AKURASI</span>
-              <span className="text-sm mt-1">RENDAH</span>
+              <AlertTriangle className="h-12 w-12 mb-2" />
+              <span className="text-xl tracking-wide">AKURASI</span>
+              <span className="text-base mt-1">RENDAH</span>
             </div>
           </motion.button>
         </div>
@@ -395,7 +395,7 @@ const PanicButton: React.FC = () => {
           disabled={isSendingAlert || locationLoading}
           whileHover={!isSendingAlert && !locationLoading ? { scale: 1.03 } : {}}
           whileTap={!isSendingAlert && !locationLoading ? { scale: 0.97 } : {}}
-          className={`relative z-10 w-44 h-44 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+          className={`relative z-10 w-52 h-52 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
             isSendingAlert
               ? 'bg-green-600'
               : isConfirming
@@ -410,20 +410,20 @@ const PanicButton: React.FC = () => {
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 1 }}
               >
-                <AlertCircle className="h-10 w-10 mb-2" />
+                <AlertCircle className="h-12 w-12 mb-2" />
               </motion.div>
             ) : isConfirming ? (
               <motion.div 
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ repeat: Infinity, duration: 1 }}
               >
-                <AlertCircle className="h-10 w-10 mb-2" />
+                <AlertCircle className="h-12 w-12 mb-2" />
               </motion.div>
             ) : (
-              <AlertCircle className="h-10 w-10 mb-2" />
+              <AlertCircle className="h-12 w-12 mb-2" />
             )}
             
-            <span className="text-xl tracking-wide">
+            <span className="text-2xl tracking-wide">
               {isSendingAlert 
                 ? "MENGIRIM..." 
                 : isConfirming 
@@ -432,7 +432,7 @@ const PanicButton: React.FC = () => {
               }
             </span>
             {isConfirming && !isSendingAlert && (
-              <span className="text-xs mt-1 bg-amber-700/50 px-2 py-0.5 rounded-full">
+              <span className="text-sm mt-1 bg-amber-700/50 px-2 py-0.5 rounded-full">
                 Tekan untuk lanjut
               </span>
             )}

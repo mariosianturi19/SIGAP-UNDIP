@@ -129,16 +129,6 @@ const PanicButtonTerms: React.FC<PanicButtonTermsProps> = ({ isOpen, onAccept, o
                     <div className="space-y-2">
                       <h3 className="font-semibold flex items-center">
                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-2">4</span>
-                        Kewajiban Pelaporan
-                      </h3>
-                      <p className="text-sm ml-8">
-                        Jika tombol darurat diaktifkan secara tidak sengaja, pengguna wajib segera membatalkan dan melaporkan kesalahan tersebut melalui fitur "Batalkan Alarm" atau menghubungi nomor darurat kampus.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h3 className="font-semibold flex items-center">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-2">5</span>
                         Persetujuan Pengguna
                       </h3>
                       <p className="text-sm ml-8">

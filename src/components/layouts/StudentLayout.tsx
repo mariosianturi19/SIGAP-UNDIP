@@ -4,7 +4,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { clearAuthTokens } from "@/lib/auth";
+import { clearAuthTokens, isAuthenticated } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LogOut, Menu, X } from "lucide-react";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import Footer from "@/components/footer";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { useEffect } from "react";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -22,11 +23,24 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
+  // Check authentication when component mounts and on route changes
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      toast.error("Anda harus masuk untuk mengakses halaman ini");
+      router.push("/auth/login");
+    }
+  }, [pathname, router]);
+
   const handleLogout = () => {
     clearAuthTokens();
     toast.success("Berhasil keluar dari sistem");
     router.push("/auth/login");
   };
+
+  // Don't render if not authenticated
+  if (!isAuthenticated()) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

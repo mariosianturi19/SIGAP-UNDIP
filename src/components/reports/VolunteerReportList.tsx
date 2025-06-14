@@ -296,29 +296,29 @@ export default function VolunteerReportList() {
     const statusMap: { [key: string]: {text: string, color: string, icon: React.ReactNode} } = {
       'pending': {
         text: "Menunggu",
-        color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+        color: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800",
         icon: <Clock className="h-3.5 w-3.5 mr-1" />
       },
       'in_progress': {
         text: "Proses",
-        color: "bg-blue-100 text-blue-800 border-blue-300",
+        color: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
         icon: <Info className="h-3.5 w-3.5 mr-1" />
       },
       'resolved': {
         text: "Selesai",
-        color: "bg-green-100 text-green-800 border-green-300",
+        color: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
         icon: <CheckCircle className="h-3.5 w-3.5 mr-1" />
       },
       'rejected': {
         text: "Ditolak",
-        color: "bg-red-100 text-red-800 border-red-300",
+        color: "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
         icon: <XCircle className="h-3.5 w-3.5 mr-1" />
       }
     };
     
     return statusMap[status] || {
       text: status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      color: "bg-gray-100 text-gray-800 border-gray-300",
+      color: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800",
       icon: <AlertCircle className="h-3.5 w-3.5 mr-1" />
     };
   };
@@ -447,64 +447,73 @@ export default function VolunteerReportList() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
+    <div className="space-y-4 sm:space-y-6 transition-theme">
+      {/* Header with Dark Mode */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-theme"
       >
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Laporan</h1>
-          <p className="text-sm sm:text-base text-gray-500 mt-1">Kelola dan update status laporan dari mahasiswa</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Laporan</h1>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">Kelola dan update status laporan dari mahasiswa</p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            className="border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 w-full sm:w-auto transition-theme"
+            disabled={isRefreshing}
+            size="sm"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Segarkan
+          </Button>
         </div>
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          className="border-gray-200 w-full sm:w-auto"
-          disabled={isRefreshing}
-          size="sm"
-        >
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Segarkan
-        </Button>
       </motion.div>
 
-      {/* Filters */}
+      {/* Filters with Dark Mode */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 border-b">
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-900 transition-theme">
+          <CardHeader className="pb-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg sm:text-xl font-bold text-gray-800">Filter</CardTitle>
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <SlidersHorizontal className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Filter</CardTitle>
+                  <CardDescription className="hidden sm:block text-gray-600 dark:text-gray-400">
+                    Filter dan cari laporan
+                  </CardDescription>
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="sm:hidden"
+                className="sm:hidden hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Menu className="h-4 w-4" />
               </Button>
             </div>
-            <CardDescription className="hidden sm:block">
-              Filter dan cari laporan
-            </CardDescription>
           </CardHeader>
           <CardContent className={`p-4 ${showFilters ? 'block' : 'hidden sm:block'}`}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                 <Input
                   placeholder="Cari laporan..."
-                  className="pl-10 border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  className="pl-10 border-gray-200 dark:border-gray-600 focus:border-blue-300 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-400/20 focus:ring-opacity-50 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -514,30 +523,38 @@ export default function VolunteerReportList() {
                 value={statusFilter}
                 onValueChange={setStatusFilter}
                 options={statusOptions}
-                className="border-gray-200"
+                className="border-gray-200 dark:border-gray-600"
               />
               
               <Select
                 value={typeFilter}
                 onValueChange={setTypeFilter}
                 options={problemTypeOptions}
-                className="border-gray-200"
+                className="border-gray-200 dark:border-gray-600"
               />
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Reports Content */}
+      {/* Reports Content with Dark Mode */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 border-b">
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-900 transition-theme">
+          <CardHeader className="pb-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle className="text-lg sm:text-xl font-bold text-gray-800">Daftar Laporan</CardTitle>
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Daftar Laporan</CardTitle>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{filteredReports.length} laporan ditemukan</p>
+                </div>
+              </div>
               
               {/* Desktop View Toggle */}
               <div className="hidden sm:flex items-center space-x-2">
@@ -565,7 +582,10 @@ export default function VolunteerReportList() {
           <CardContent className="p-0">
             {isLoading ? (
               <div className="flex justify-center items-center p-8 sm:p-12">
-                <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 animate-spin text-gray-400" />
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 animate-spin text-green-600 dark:text-green-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">Memuat laporan...</p>
+                </div>
               </div>
             ) : filteredReports.length === 0 ? (
               <motion.div 
@@ -574,13 +594,13 @@ export default function VolunteerReportList() {
                 className="text-center p-8 sm:p-12"
               >
                 <div className="flex flex-col items-center justify-center">
-                  <div className="rounded-full bg-gray-100 p-4 mb-4">
-                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
+                  <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-4 mb-4">
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" />
                   </div>
                   {searchQuery || statusFilter !== "all" || typeFilter !== "all" ? (
                     <>
-                      <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-1">Tidak ada laporan yang cocok</h3>
-                      <p className="text-sm sm:text-base text-gray-500 mb-4">Coba ubah kriteria pencarian atau filter Anda</p>
+                      <h3 className="text-base sm:text-lg font-medium text-gray-800 dark:text-white mb-1">Tidak ada laporan yang cocok</h3>
+                      <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4">Coba ubah kriteria pencarian atau filter Anda</p>
                       <Button 
                         variant="outline" 
                         onClick={() => {
@@ -588,7 +608,7 @@ export default function VolunteerReportList() {
                           setStatusFilter('all');
                           setTypeFilter('all');
                         }}
-                        className="border-gray-200"
+                        className="border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
                         size="sm"
                       >
                         Hapus filter
@@ -596,12 +616,12 @@ export default function VolunteerReportList() {
                     </>
                   ) : (
                     <>
-                      <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-1">Tidak ada laporan ditemukan</h3>
-                      <p className="text-sm sm:text-base text-gray-500 mb-4">Saat ini tidak ada laporan dalam sistem</p>
+                      <h3 className="text-base sm:text-lg font-medium text-gray-800 dark:text-white mb-1">Tidak ada laporan ditemukan</h3>
+                      <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4">Saat ini tidak ada laporan dalam sistem</p>
                       <Button 
                         variant="outline"
                         onClick={handleRefresh}
-                        className="border-gray-200"
+                        className="border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
                         size="sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
@@ -613,13 +633,13 @@ export default function VolunteerReportList() {
               </motion.div>
             ) : (
               <>
-                {/* Mobile Card View (Always on mobile) */}
+                {/* Mobile Card View (Always on mobile) with Dark Mode */}
                 <div className="sm:hidden">
                   <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="divide-y divide-gray-100"
+                    className="divide-y divide-gray-100 dark:divide-gray-800"
                   >
                     {filteredReports.map((report) => {
                       const status = getStatusBadge(report.status);
@@ -627,7 +647,7 @@ export default function VolunteerReportList() {
                         <motion.div 
                           key={report.id}
                           variants={itemVariants}
-                          className="p-4 hover:bg-gray-50 transition-colors"
+                          className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                         >
                           <div className="space-y-3">
                             {/* Header */}
@@ -637,17 +657,17 @@ export default function VolunteerReportList() {
                                   {status.icon}
                                   <span>{status.text}</span>
                                 </Badge>
-                                <span className="text-xs text-gray-500">#{report.id}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">#{report.id}</span>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-36">
-                                  <DropdownMenuItem onClick={() => handleViewReport(report)} className="cursor-pointer">
-                                    <Edit className="h-4 w-4 mr-2 text-blue-600" />
+                                <DropdownMenuContent align="end" className="w-36 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                  <DropdownMenuItem onClick={() => handleViewReport(report)} className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <Edit className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                                     <span>Kelola</span>
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -656,31 +676,31 @@ export default function VolunteerReportList() {
 
                             {/* User Info */}
                             <div className="flex items-center space-x-3">
-                              <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-medium text-sm">
+                              <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 dark:text-blue-400 font-medium text-sm">
                                   {report.user?.name ? report.user.name.charAt(0).toUpperCase() : "U"}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 truncate">{report.user?.name}</div>
-                                <div className="text-xs text-gray-500 truncate">{report.user?.nim || report.user?.email}</div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{report.user?.name}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{report.user?.nim || report.user?.email}</div>
                               </div>
                             </div>
 
                             {/* Details */}
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                                   {formatProblemType(report.problem_type)}
                                 </Badge>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {formatDate(report.created_at)}
                                 </span>
                               </div>
                               
                               <div className="flex items-start space-x-2">
-                                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                <span className="text-sm text-gray-600 line-clamp-2">{report.location}</span>
+                                <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{report.location}</span>
                               </div>
                             </div>
 
@@ -688,7 +708,7 @@ export default function VolunteerReportList() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                              className="w-full text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                               onClick={() => handleViewReport(report)}
                             >
                               <Edit className="h-4 w-4 mr-1" />
@@ -701,17 +721,17 @@ export default function VolunteerReportList() {
                   </motion.div>
                 </div>
 
-                {/* Desktop View */}
+                {/* Desktop View with Dark Mode */}
                 <div className="hidden sm:block">
                   {viewMode === 'list' ? (
-                    // Table View for Desktop
+                    // Table View for Desktop with Dark Mode
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-gray-50 text-gray-700 text-sm">
+                        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm border-b border-gray-200 dark:border-gray-700">
                           <tr>
                             <th className="px-4 py-3 text-left">
                               <button
-                                className="flex items-center font-medium"
+                                className="flex items-center font-medium hover:text-gray-900 dark:hover:text-gray-100"
                                 onClick={() => handleSort('date')}
                               >
                                 Tanggal
@@ -723,7 +743,7 @@ export default function VolunteerReportList() {
                             </th>
                             <th className="px-4 py-3 text-left">
                               <button
-                                className="flex items-center font-medium"
+                                className="flex items-center font-medium hover:text-gray-900 dark:hover:text-gray-100"
                                 onClick={() => handleSort('location')}
                               >
                                 Lokasi
@@ -732,7 +752,7 @@ export default function VolunteerReportList() {
                             </th>
                             <th className="px-4 py-3 text-left">
                               <button
-                                className="flex items-center font-medium"
+                                className="flex items-center font-medium hover:text-gray-900 dark:hover:text-gray-100"
                                 onClick={() => handleSort('type')}
                               >
                                 Jenis Masalah
@@ -741,7 +761,7 @@ export default function VolunteerReportList() {
                             </th>
                             <th className="px-4 py-3 text-left">
                               <button
-                                className="flex items-center font-medium"
+                                className="flex items-center font-medium hover:text-gray-900 dark:hover:text-gray-100"
                                 onClick={() => handleSort('status')}
                               >
                                 Status
@@ -755,7 +775,7 @@ export default function VolunteerReportList() {
                           variants={containerVariants}
                           initial="hidden"
                           animate="visible"
-                          className="divide-y divide-gray-100"
+                          className="divide-y divide-gray-100 dark:divide-gray-800"
                         >
                           {filteredReports.map((report) => {
                             const status = getStatusBadge(report.status);
@@ -763,14 +783,14 @@ export default function VolunteerReportList() {
                               <motion.tr 
                                 key={report.id}
                                 variants={itemVariants}
-                                className="hover:bg-gray-50 transition-colors"
+                                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                               >
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="flex flex-col">
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                                       {formatDate(report.created_at)}
                                     </div>
-                                    <div className="text-xs text-gray-500 flex items-center">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                                       <Clock className="h-3 w-3 mr-1" />
                                       {formatTime(report.created_at)}
                                     </div>
@@ -778,25 +798,25 @@ export default function VolunteerReportList() {
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="flex items-center">
-                                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                      <span className="text-blue-600 font-medium">
+                                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                                      <span className="text-blue-600 dark:text-blue-400 font-medium">
                                         {report.user?.name ? report.user.name.charAt(0).toUpperCase() : "U"}
                                       </span>
                                     </div>
                                     <div className="ml-3">
-                                      <div className="text-sm font-medium text-gray-900">{report.user?.name}</div>
-                                      <div className="text-xs text-gray-500">{report.user?.nim || report.user?.email}</div>
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white">{report.user?.name}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{report.user?.nim || report.user?.email}</div>
                                     </div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <div className="flex items-center text-sm text-gray-600">
-                                    <MapPin className="h-4 w-4 text-gray-400 mr-1.5 flex-shrink-0" />
+                                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-1.5 flex-shrink-0" />
                                     <span className="truncate max-w-[180px]">{report.location}</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                  <Badge variant="outline" className="capitalize font-normal">
+                                  <Badge variant="outline" className="capitalize font-normal border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                                     {formatProblemType(report.problem_type)}
                                   </Badge>
                                 </td>
@@ -811,7 +831,7 @@ export default function VolunteerReportList() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8"
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8"
                                       onClick={() => handleViewReport(report)}
                                     >
                                       <Edit className="h-4 w-4 mr-1" />
@@ -826,7 +846,7 @@ export default function VolunteerReportList() {
                       </table>
                     </div>
                   ) : (
-                    // Grid View for Desktop
+                    // Grid View for Desktop with Dark Mode
                     <div className="p-6">
                       <motion.div
                         variants={containerVariants}
@@ -840,7 +860,7 @@ export default function VolunteerReportList() {
                             <motion.div
                               key={report.id}
                               variants={itemVariants}
-                              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+                              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
                               onClick={() => handleViewReport(report)}
                             >
                               <div className="space-y-3">
@@ -849,32 +869,32 @@ export default function VolunteerReportList() {
                                     {status.icon}
                                     <span>{status.text}</span>
                                   </Badge>
-                                  <span className="text-xs text-gray-500">#{report.id}</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">#{report.id}</span>
                                 </div>
 
                                 <div className="flex items-center space-x-3">
-                                  <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span className="text-blue-600 font-medium">
+                                  <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                                    <span className="text-blue-600 dark:text-blue-400 font-medium">
                                       {report.user?.name ? report.user.name.charAt(0).toUpperCase() : "U"}
                                     </span>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-gray-900 truncate">{report.user?.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{report.user?.nim || report.user?.email}</div>
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{report.user?.name}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{report.user?.nim || report.user?.email}</div>
                                   </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                                     {formatProblemType(report.problem_type)}
                                   </Badge>
                                   
                                   <div className="flex items-start space-x-2">
-                                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm text-gray-600 line-clamp-2">{report.location}</span>
+                                    <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{report.location}</span>
                                   </div>
 
-                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                                     <span>{formatDate(report.created_at)}</span>
                                     <span>{formatTime(report.created_at)}</span>
                                   </div>
@@ -893,7 +913,7 @@ export default function VolunteerReportList() {
         </Card>
       </motion.div>
 
-      {/* Modal Detail dan Update Laporan */}
+      {/* Modal Detail dan Update Laporan with Dark Mode */}
       <AnimatePresence>
         {isDetailOpen && selectedReport && (
           <motion.div 
@@ -904,27 +924,27 @@ export default function VolunteerReportList() {
             onClick={() => setIsDetailOpen(false)}
           >
             <motion.div 
-              className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto"
+              className="bg-white dark:bg-gray-900 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto border border-gray-200 dark:border-gray-700"
               variants={detailVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-center z-10">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Kelola Laporan #{selectedReport.id}</h2>
-                <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)}>
+              <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between items-center z-10">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Kelola Laporan #{selectedReport.id}</h2>
+                <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)} className="hover:bg-gray-100 dark:hover:bg-gray-800">
                   <X className="h-5 w-5" />
                 </Button>
               </div>
               
               <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-2">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-4">Detail Laporan</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Detail Laporan</h3>
                   
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Status Saat Ini</p>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status Saat Ini</p>
                       <Badge className={`mt-1 ${getStatusBadge(selectedReport.status).color} px-2.5 py-1 text-xs font-normal border flex items-center w-fit`}>
                         {getStatusBadge(selectedReport.status).icon}
                         <span>{getStatusBadge(selectedReport.status).text}</span>
@@ -932,33 +952,33 @@ export default function VolunteerReportList() {
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Dikirim pada</p>
-                      <p className="text-sm text-gray-900 mt-1">{formatFullDateTime(selectedReport.created_at)}</p>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Dikirim pada</p>
+                      <p className="text-sm text-gray-900 dark:text-white mt-1">{formatFullDateTime(selectedReport.created_at)}</p>
                    </div>
                    
                    <div>
-                     <p className="text-sm font-medium text-gray-500">Jenis Masalah</p>
-                     <Badge variant="outline" className="mt-1 capitalize">
+                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Jenis Masalah</p>
+                     <Badge variant="outline" className="mt-1 capitalize border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                        {formatProblemType(selectedReport.problem_type)}
                      </Badge>
                    </div>
                    
                    <div>
-                     <p className="text-sm font-medium text-gray-500">Lokasi</p>
-                     <div className="flex items-center mt-1 text-sm text-gray-900">
-                       <MapPin className="h-4 w-4 text-gray-400 mr-1.5" />
+                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Lokasi</p>
+                     <div className="flex items-center mt-1 text-sm text-gray-900 dark:text-white">
+                       <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-1.5" />
                        <span>{selectedReport.location}</span>
                      </div>
                    </div>
                    
                    <div>
-                     <p className="text-sm font-medium text-gray-500">Deskripsi</p>
-                     <p className="text-sm text-gray-900 mt-1 whitespace-pre-line">{selectedReport.description}</p>
+                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Deskripsi</p>
+                     <p className="text-sm text-gray-900 dark:text-white mt-1 whitespace-pre-line">{selectedReport.description}</p>
                    </div>
                    
                    <div>
-                     <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-3">Bukti Foto</h3>
-                     <div className="bg-gray-100 rounded-lg overflow-hidden border">
+                     <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Bukti Foto</h3>
+                     <div className="bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                        {selectedReport.photo_url ? (
                          <img
                            src={selectedReport.photo_url}
@@ -966,7 +986,7 @@ export default function VolunteerReportList() {
                            className="w-full object-contain max-h-[300px] sm:max-h-[400px]"
                          />
                        ) : (
-                         <div className="flex items-center justify-center h-64 bg-gray-100 text-gray-400">
+                         <div className="flex items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
                            <p>Tidak ada gambar tersedia</p>
                          </div>
                        )}
@@ -974,21 +994,21 @@ export default function VolunteerReportList() {
                    </div>
                    
                    <div>
-                     <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-3">Pelapor</h3>
+                     <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Pelapor</h3>
                      <div className="flex items-center">
-                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                         <span className="text-blue-600 font-medium">
+                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                         <span className="text-blue-600 dark:text-blue-400 font-medium">
                            {selectedReport.user?.name ? selectedReport.user.name.charAt(0).toUpperCase() : "U"}
                          </span>
                        </div>
                        <div className="ml-3">
-                         <p className="text-sm font-medium text-gray-900">{selectedReport.user?.name}</p>
-                         <p className="text-xs text-gray-500">{selectedReport.user?.email}</p>
+                         <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedReport.user?.name}</p>
+                         <p className="text-xs text-gray-500 dark:text-gray-400">{selectedReport.user?.email}</p>
                          {selectedReport.user?.nim && (
-                           <p className="text-xs text-gray-500">NIM: {selectedReport.user.nim}</p>
+                           <p className="text-xs text-gray-500 dark:text-gray-400">NIM: {selectedReport.user.nim}</p>
                          )}
                          {selectedReport.user?.jurusan && (
-                           <p className="text-xs text-gray-500">Jurusan: {selectedReport.user.jurusan}</p>
+                           <p className="text-xs text-gray-500 dark:text-gray-400">Jurusan: {selectedReport.user.jurusan}</p>
                          )}
                        </div>
                      </div>
@@ -996,13 +1016,13 @@ export default function VolunteerReportList() {
                  </div>
                </div>
                
-               {/* Panel Update Status */}
+               {/* Panel Update Status with Dark Mode */}
                <div className="lg:col-span-1">
-                 <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-4">Update Status</h3>
+                 <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Update Status</h3>
                  
                  <div className="space-y-4">
                    <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                        Status Baru
                      </label>
                      <Select
@@ -1014,7 +1034,7 @@ export default function VolunteerReportList() {
                    </div>
                    
                    <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                        Catatan Relawan
                      </label>
                      <Textarea
@@ -1022,18 +1042,18 @@ export default function VolunteerReportList() {
                        onChange={(e) => setAdminNotes(e.target.value)}
                        placeholder="Tambahkan catatan atau komentar tentang status laporan..."
                        rows={4}
-                       className="resize-none"
+                       className="resize-none border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                      />
-                     <p className="text-xs text-gray-500 mt-1">
+                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                        Catatan akan terlihat oleh pelapor dan admin lainnya
                      </p>
                    </div>
                    
                    {selectedReport.admin_notes && (
                      <div>
-                       <p className="text-sm font-medium text-gray-500 mb-2">Catatan Sebelumnya</p>
-                       <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                         <p className="text-sm text-gray-900 whitespace-pre-line">{selectedReport.admin_notes}</p>
+                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Catatan Sebelumnya</p>
+                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
+                         <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{selectedReport.admin_notes}</p>
                        </div>
                      </div>
                    )}
@@ -1041,7 +1061,7 @@ export default function VolunteerReportList() {
                    <Button
                      onClick={handleUpdateStatus}
                      disabled={isUpdating || updateStatus === selectedReport.status}
-                     className="w-full bg-blue-600 hover:bg-blue-700"
+                     className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                    >
                      {isUpdating ? (
                        <>
@@ -1056,9 +1076,9 @@ export default function VolunteerReportList() {
                      )}
                    </Button>
                    
-                   <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                     <h4 className="text-sm font-medium text-blue-900 mb-2">Panduan Status</h4>
-                     <div className="space-y-2 text-xs text-blue-800">
+                   <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                     <h4 className="text-sm font-medium text-blue-900 dark:text-blue-400 mb-2">Panduan Status</h4>
+                     <div className="space-y-2 text-xs text-blue-800 dark:text-blue-400">
                        <div><span className="font-medium">Menunggu:</span> Laporan baru yang belum ditangani</div>
                        <div><span className="font-medium">Dalam Proses:</span> Sedang ditangani atau dalam investigasi</div>
                        <div><span className="font-medium">Diselesaikan:</span> Masalah telah diperbaiki atau ditangani</div>
