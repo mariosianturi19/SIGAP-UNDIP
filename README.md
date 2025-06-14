@@ -154,7 +154,7 @@
         <sub><b>Mario Sianturi</b></sub>
       </a>
       <br />
-      <sub>Frontend Developer</sub>
+      <sub>Project Lead & Frontend Developer</sub>
     </td>
     <td align="center">
       <a href="https://github.com/dzikrirazzan">
