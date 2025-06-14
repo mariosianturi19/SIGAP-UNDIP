@@ -592,16 +592,6 @@ export default function VolunteerDashboardLayout({ children }: VolunteerDashboar
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Notifications */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="relative h-8 w-8 lg:h-10 lg:w-10 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-              >
-                <Bell className="h-4 w-4 lg:h-5 lg:w-5" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 lg:h-3 lg:w-3 bg-green-500 rounded-full"></span>
-              </Button>
-
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -640,20 +630,6 @@ export default function VolunteerDashboardLayout({ children }: VolunteerDashboar
                       </div>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer">
-                    <User className="mr-3 h-4 w-4" />
-                    <span>Profil Saya</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Settings className="mr-3 h-4 w-4" />
-                    <span>Pengaturan</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <HelpCircle className="mr-3 h-4 w-4" />
-                    <span>Bantuan</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20" 
                     onClick={handleLogout}
