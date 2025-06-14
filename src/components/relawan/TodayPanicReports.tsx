@@ -277,7 +277,7 @@ export default function TodayPanicReports() {
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          Segarkan
+          Refresh
         </Button>
       </motion.div>
 

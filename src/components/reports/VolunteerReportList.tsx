@@ -472,7 +472,7 @@ export default function VolunteerReportList() {
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            Segarkan
+            Refresh
           </Button>
         </div>
       </motion.div>
@@ -625,7 +625,7 @@ export default function VolunteerReportList() {
                         size="sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        Segarkan
+                        Refresh
                       </Button>
                     </>
                   )}

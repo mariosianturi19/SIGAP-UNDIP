@@ -396,7 +396,7 @@ export default function VolunteerManagement() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Segarkan Data
+              Refresh Data
             </Button>
             <Button
               onClick={handleCreateVolunteer}

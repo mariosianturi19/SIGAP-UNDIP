@@ -730,7 +730,7 @@ export default function Dashboard() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Segarkan Data
+              Refresh Data
             </Button>
           </div>
         </div>
