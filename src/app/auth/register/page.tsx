@@ -34,8 +34,14 @@ const registerFormSchema = z
       .min(11, "Nomor telepon harus minimal 11 digit")
       .max(12, "Nomor telepon maksimal 12 digit")
       .regex(/^\d+$/, "Nomor telepon hanya boleh berisi angka"),
-    password: z.string().min(6, "Kata sandi harus minimal 6 karakter"),
-    confirmPassword: z.string().min(6, "Kata sandi harus minimal 6 karakter"),
+    password: z
+      .string()
+      .min(8, "Kata sandi harus minimal 8 karakter")
+      .regex(/[A-Z]/, "Kata sandi harus mengandung minimal 1 huruf kapital")
+      .regex(/[a-z]/, "Kata sandi harus mengandung minimal 1 huruf kecil")
+      .regex(/[0-9]/, "Kata sandi harus mengandung minimal 1 angka")
+      .regex(/[^A-Za-z0-9]/, "Kata sandi harus mengandung minimal 1 simbol"),
+    confirmPassword: z.string().min(8, "Kata sandi harus minimal 8 karakter"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Kata sandi tidak cocok",
@@ -51,6 +57,13 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [shakeError, setShakeError] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSymbol: false,
+    hasMinLength: false
+  });
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -121,6 +134,17 @@ export default function RegisterPage() {
       setIsLoading(false)
     }
   }
+
+  // Function to check password strength
+  const checkPasswordStrength = (password: string) => {
+    setPasswordStrength({
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSymbol: /[^A-Za-z0-9]/.test(password),
+      hasMinLength: password.length >= 8
+    });
+  };
 
   return (
     <div className="relative flex min-h-screen w-full">
@@ -331,6 +355,10 @@ export default function RegisterPage() {
                             className="pl-10 pr-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              checkPasswordStrength(e.target.value);
+                            }}
                           />
                         </FormControl>
                         <button
@@ -341,6 +369,31 @@ export default function RegisterPage() {
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
+                      
+                      {/* Password Strength Indicator */}
+                      {field.value && (
+                        <div className="mt-2 space-y-2">
+                          <div className="text-xs text-gray-600 font-medium">Kekuatan kata sandi:</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className={`flex items-center ${passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-400'}`}>
+                              {passwordStrength.hasMinLength ? '✓' : '○'} Minimal 8 karakter
+                            </div>
+                            <div className={`flex items-center ${passwordStrength.hasUppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                              {passwordStrength.hasUppercase ? '✓' : '○'} Huruf kapital
+                            </div>
+                            <div className={`flex items-center ${passwordStrength.hasLowercase ? 'text-green-600' : 'text-gray-400'}`}>
+                              {passwordStrength.hasLowercase ? '✓' : '○'} Huruf kecil
+                            </div>
+                            <div className={`flex items-center ${passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-400'}`}>
+                              {passwordStrength.hasNumber ? '✓' : '○'} Angka
+                            </div>
+                            <div className={`flex items-center ${passwordStrength.hasSymbol ? 'text-green-600' : 'text-gray-400'}`}>
+                              {passwordStrength.hasSymbol ? '✓' : '○'} Simbol
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <FormMessage />
                     </FormItem>
                   )}
