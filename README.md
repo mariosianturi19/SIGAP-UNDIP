@@ -4,9 +4,9 @@
 
 ![SIGAP UNDIP Logo](https://firebasestorage.googleapis.com/v0/b/seputipy.appspot.com/o/covers%2Fundip.png?alt=media)
 
-**Emergency Information and Reporting System - Diponegoro University**
+**Sistem Informasi Gawat dan Pelaporan Universitas Diponegoro**
 
-*One Platform, Emergency Response, Quick Action*
+*Satu Platform, Tanggap Darurat, Respons Cepat*
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.3.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
@@ -201,7 +201,7 @@ Special thanks to:
 
 **Built with ❤️ by SIGAP UNDIP Team**
 
-*"Together with SIGAP, Safer Campus"*
+*"Bersama SIGAP, Kampus Lebih Aman"*
 
 [⬆ Back to top](#-sigap-undip)
 
