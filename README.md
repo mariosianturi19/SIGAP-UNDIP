@@ -154,22 +154,13 @@
         <sub><b>Mario Sianturi</b></sub>
       </a>
       <br />
-      <sub>Project Lead & Full Stack Developer</sub>
-    </td>
-    <td align="center">
-      <a href="#">
-        <img src="https://via.placeholder.com/100" width="100px;" alt="Contributor"/>
-        <br />
-        <sub><b>Contributor Name</b></sub>
-      </a>
-      <br />
       <sub>Frontend Developer</sub>
     </td>
     <td align="center">
-      <a href="#">
-        <img src="https://via.placeholder.com/100" width="100px;" alt="Contributor"/>
+      <a href="https://github.com/dzikrirazzan">
+        <img src="https://github.com/dzikrirazzan.png" width="100px;" alt="Dzikri Razzan"/>
         <br />
-        <sub><b>Contributor Name</b></sub>
+        <sub><b>Dzikri Razzan</b></sub>
       </a>
       <br />
       <sub>Backend Developer</sub>
@@ -177,29 +168,11 @@
   </tr>
 </table>
 
-### 🤝 Contributors
-
-Thanks to all contributors who have helped make SIGAP UNDIP better!
-
-[![Contributors](https://contrib.rocks/image?repo=mariosianturi19/SIGAP-UNDIP)](https://github.com/mariosianturi19/SIGAP-UNDIP/graphs/contributors)
-
 </div>
 
 ---
 
 <div align="center">
-
-### 🙏 Acknowledgments
-
-Special thanks to:
-- **Diponegoro University** - Institutional support
-- **UNDIP K3L Team** - Consultation and guidance
-- **UNDIP Students** - Feedback and testing
-- **Open Source Community** - Tools and libraries
-
----
-
-**Built with ❤️ by SIGAP UNDIP Team**
 
 *"Bersama SIGAP, Kampus Lebih Aman"*
 
