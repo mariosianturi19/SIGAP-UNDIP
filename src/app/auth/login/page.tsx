@@ -137,7 +137,7 @@ export default function LoginPage() {
 
         {/* Formulir Login */}
         <div className="w-full max-w-md lg:w-1/2">
-          <div className="overflow-hidden rounded-2xl bg-white shadow-xl transition-all duration-300 hover:shadow-2xl">
+          <div className="overflow-hidden rounded-2xl bg-white dark:bg-white shadow-xl transition-all duration-300 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-t-2xl">
               <h2 className="text-2xl font-bold text-white text-center">Silahkan Masuk</h2>
               <p className="text-gray-300 text-center mt-1">Masuk untuk mengakses SIGAP UNDIP</p>
@@ -153,24 +153,24 @@ export default function LoginPage() {
             )}
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-5 bg-white">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-5 bg-white dark:bg-white">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Email</FormLabel>
+                      <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-1">Email</FormLabel>
                       <div
                         className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${form.formState.errors.email ? "ring-2 ring-red-400" : ""}`}
                       >
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-400">
                           <Mail size={18} />
                         </span>
                         <FormControl>
                           <Input
                             type="email"
                             placeholder="E-mail official Undip"
-                            className="pl-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
+                            className="pl-10 border-0 shadow-gray-400 bg-white dark:bg-white text-gray-900 dark:text-gray-900 placeholder-gray-500 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}
                           />
@@ -186,25 +186,25 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Password</FormLabel>
+                      <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-1">Password</FormLabel>
                       <div
                         className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${form.formState.errors.password ? "ring-2 ring-red-400" : ""}`}
                       >
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-400">
                           <Lock size={18} />
                         </span>
                         <FormControl>
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="Enter your password"
-                            className="pl-10 pr-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
+                            className="pl-10 pr-10 border-0 shadow-gray-400 bg-white dark:bg-white text-gray-900 dark:text-gray-900 placeholder-gray-500 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}
                           />
                         </FormControl>
                         <button
                           type="button"
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-700 transition-colors"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-700 transition-colors"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -217,18 +217,18 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-gray-800 to-black hover:from-black hover:to-gray-800 transition-all duration-300 transform hover:scale-105 rounded-xl py-6"
+                  className="w-full bg-gradient-to-r from-gray-800 to-black hover:from-black hover:to-gray-800 dark:bg-gradient-to-r dark:from-gray-800 dark:to-black dark:hover:from-black dark:hover:to-gray-800 text-white dark:text-white transition-all duration-300 transform hover:scale-105 rounded-xl py-6"
                   size="lg"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-white dark:text-white" />
                       Sedang Masuk...
                     </>
                   ) : (
                     <>
-                      <LogIn className="h-4 w-4 mr-2" />
+                      <LogIn className="h-4 w-4 mr-2 text-white dark:text-white" />
                       Masuk
                     </>
                   )}
@@ -247,7 +247,7 @@ export default function LoginPage() {
                 <div className="flex justify-center pt-2">
                   <Link
                     href="/auth/register"
-                    className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium"
+                    className="text-gray-600 dark:text-gray-600 hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm font-medium"
                   >
                     Belum punya akun? Daftar
                   </Link>

@@ -237,17 +237,11 @@ export default function MyShiftsCalendar() {
               {/* Summary with Dark Mode - MOVED TO TOP */}
               <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3 text-sm sm:text-base">Ringkasan Jadwal</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col items-center text-center">
                       <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{shiftsData.summary.total_scheduled_days}</span>
                       <span className="text-gray-600 dark:text-gray-400 text-xs">Total Hari Kerja</span>
-                    </div>
-                  </div>
-                  <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col items-center text-center">
-                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">{shiftsData.summary.days_with_actual_shifts}</span>
-                      <span className="text-gray-600 dark:text-gray-400 text-xs">Shift Aktual</span>
                     </div>
                   </div>
                   <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -258,8 +252,8 @@ export default function MyShiftsCalendar() {
                   </div>
                   <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col items-center text-center">
-                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{shiftsData.summary.work_days_this_week}%</span>
-                      <span className="text-gray-600 dark:text-gray-400 text-xs">Persentase Kerja</span>
+                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{shiftsData.summary.work_days_this_week}</span>
+                      <span className="text-gray-600 dark:text-gray-400 text-xs">Jadwal Bertugas</span>
                     </div>
                   </div>
                 </div>
@@ -307,12 +301,6 @@ export default function MyShiftsCalendar() {
                             {status.icon}
                             <span>{status.text}</span>
                           </Badge>
-                          
-                          {scheduleItem.is_scheduled && scheduleItem.shift_id && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              <span className="font-medium text-green-600 dark:text-green-400">Aktual</span> - ID: {scheduleItem.shift_id}
-                            </div>
-                          )}
                           
                           {scheduleItem.is_scheduled && !scheduleItem.shift_id && (
                             <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
@@ -376,11 +364,6 @@ export default function MyShiftsCalendar() {
                               }`}>
                                 {formatShortDate(scheduleItem.date)}
                               </p>
-                              {scheduleItem.is_scheduled && scheduleItem.shift_id && (
-                                <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                                  Shift Aktual - ID: {scheduleItem.shift_id}
-                                </p>
-                              )}
                               {scheduleItem.is_scheduled && !scheduleItem.shift_id && (
                                 <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 font-medium">
                                   Shift Pola
@@ -426,11 +409,7 @@ export default function MyShiftsCalendar() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2">
-                          {shift.shift_id ? (
-                            <Badge className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs">
-                              Aktual - ID: {shift.shift_id}
-                            </Badge>
-                          ) : (
+                          {!shift.shift_id && (
                             <Badge className="bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800 text-xs">
                               Shift Pola
                             </Badge>
