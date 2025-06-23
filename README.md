@@ -73,7 +73,7 @@
 ### 👥 **Multi-Role Access**
 - **Student Interface**: Direct access for students with emergency and reporting features
 - **Volunteer Dashboard**: Volunteer panel with notifications and response management
-- **Admin Dashboard**: Full system control with analytics and user management
+- **Admin Dashboard**: System control with volunteer management and monitoring
 
 ### 🔒 **Advanced Security**
 - **JWT Authentication**: Secure authentication system
@@ -118,24 +118,92 @@
 
 ## 📱 Usage
 
-### **For Students**
-1. **Registration**: Register using UNDIP email
-2. **Login**: Access SIGAP UNDIP system
-3. **Emergency Report**: Use panic button for emergencies
-4. **Regular Report**: Create infrastructure problem reports
-5. **Tracking**: Monitor your report status in history page
+### **For Students** 🎓
 
-### **For Volunteers**
-1. **Account Activation**: Wait for admin approval
-2. **Dashboard**: Access volunteer panel
-3. **Notifications**: Receive real-time emergency alerts
-4. **Response**: Respond and update emergency status
+#### 1. **Authentication & Access** 🔐
+- **Simple Registration**: Register with basic information (name, NIM, password)
+- **Secure Login**: JWT-based authentication with session management
+- **Role-Based Access**: Automatic student role assignment after registration
 
-### **For Administrators**
-1. **Admin Panel**: Access administrative dashboard
-2. **User Management**: Manage users and permissions
-3. **Analytics**: View statistics and reports
-4. **System Config**: Configure system settings
+#### 2. **Panic Button Emergency System** 🚨
+- **🆘 Emergency Page**: Dedicated panic button page for critical situations
+- **📍 GPS Location Detection**: Automatic location capture when panic button is pressed
+- **⚡ One-Touch Alert**: Instant emergency alert to volunteers with single button press
+- **📱 Real-time Status**: Visual feedback showing alert has been sent successfully
+
+#### 3. **Smart Reporting System** 📋
+- **📝 Report Creation**: Submit detailed reports for campus issues (infrastructure, electrical, security, etc.)
+- **📸 Photo Upload**: Attach multiple photos as evidence for reports
+- **📍 Location Tagging**: Add precise location information for reported issues
+- **📊 Category Selection**: Choose from predefined categories for better classification
+
+#### 4. **History & Tracking** 📚
+- **📈 Personal History**: View complete history of submitted reports
+- **🔍 Status Monitoring**: Track real-time status updates of reports (pending, in progress, resolved)
+- **📄 Detailed View**: Access full report details including admin responses and notes
+- **📅 Timeline View**: Chronological view of all student activities and submissions
+
+---
+
+### **For Volunteers** 🚑
+
+#### 1. **Volunteer Dashboard** 📊
+- **📈 Real-time Overview**: Live dashboard showing current emergency status and statistics
+- **🔔 Alert Notifications**: Instant notifications for nearby emergencies and new reports
+- **📊 Today's Activity**: Summary of panic alerts and reports handled during current shift
+- **🗺️ Campus Map Integration**: Visual representation of emergency locations and coverage area
+
+#### 2. **Smart Report Management** 📋
+- **📝 Report Review**: Access and review all student-submitted campus reports
+- **✅ Status Updates**: Update report status (reviewing, in progress, resolved)
+- **📝 Response Notes**: Add volunteer notes and follow-up actions for reports
+- **🏷️ Category Management**: Filter and organize reports by categories and priority
+
+#### 3. **Panic Alert Management** 🚨
+- **🆘 Emergency Response**: Receive and respond to student panic button alerts
+- **📍 Location Tracking**: View precise GPS locations of emergency situations
+- **⏱️ Response Timer**: Track response time from alert to volunteer action
+- **✅ Status Control**: Update panic alert status (responding, arrived, resolved)
+
+#### 4. **My Shifts Management** 📅
+- **📅 Shift Schedule**: View assigned duty schedules and upcoming shifts
+- **🟢 Duty Status**: Toggle availability status for emergency response
+- **📊 Shift Statistics**: Track performance metrics and completed assignments
+- **⏰ Time Management**: Monitor duty hours and shift duration
+
+---
+
+### **For Administrators** 👨‍💼
+
+#### 1. **Admin Dashboard** 📊
+- **📈 System Overview**: Comprehensive real-time monitoring of all system activities
+- **📊 Key Metrics**: Emergency response statistics, report volumes, and volunteer activity
+- **🗺️ Emergency Map**: Interactive campus map showing active incidents and volunteer coverage
+- **📅 Recent Activities**: Latest system activities with auto-refresh capabilities
+
+#### 2. **Volunteer Management** 👥
+- **👤 Volunteer Registration**: Register new volunteer accounts with required credentials
+- **📋 Volunteer Database**: Comprehensive list of all registered volunteers with status tracking
+- **✅ Status Management**: Activate/deactivate volunteer accounts and manage permissions
+- **📊 Performance Tracking**: Monitor volunteer response times and activity levels
+
+#### 3. **Smart Report Management** 📝
+- **📋 Report Administration**: Review and manage all student-submitted campus reports
+- **🔄 Status Control**: Update report status and assign resolution priorities
+- **📝 Administrative Notes**: Add official responses and follow-up action plans
+- **📊 Report Analytics**: Generate insights on campus incident patterns and trends
+
+#### 4. **Panic Report Monitoring** 🚨
+- **🆘 Emergency Oversight**: Monitor all panic button alerts and response status
+- **👥 Volunteer Coordination**: Track which volunteers are responding to emergencies
+- **📍 Location Monitoring**: Real-time tracking of emergency locations and response coverage
+- **⚡ Escalation Control**: Handle critical incidents requiring administrative intervention
+
+#### 5. **Volunteer Shift Management** 📅
+- **📅 Shift Scheduling**: Create and manage volunteer duty schedules
+- **👥 Shift Assignment**: Assign volunteers to specific time slots and coverage areas
+- **📊 Coverage Analytics**: Monitor volunteer coverage across different time periods
+- **⏰ Schedule Optimization**: Analyze and optimize shift patterns for better emergency response
 
 ---
 
