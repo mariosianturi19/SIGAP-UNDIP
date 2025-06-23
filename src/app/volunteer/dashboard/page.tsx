@@ -308,22 +308,24 @@ export default function VolunteerDashboard() {
       }
 
       // Initialize new data dengan data dummy yang realistis
+      const todayStatus = {
+        date: new Date().toISOString(),
+        is_on_duty: Math.random() > 0.6, // 40% kemungkinan bertugas
+        shift_id: Math.random() > 0.5 ? Math.floor(Math.random() * 100) + 1 : undefined,
+        shift_type: Math.random() > 0.5 ? 'actual' : 'pattern' as 'actual' | 'pattern'
+      };
+
       const newData: VolunteerDashboardData = {
-        todayStatus: {
-          date: new Date().toISOString(),
-          is_on_duty: Math.random() > 0.6, // 40% kemungkinan bertugas
-          shift_id: Math.random() > 0.5 ? Math.floor(Math.random() * 100) + 1 : undefined,
-          shift_type: Math.random() > 0.5 ? 'actual' : 'pattern'
-        },
+        todayStatus: todayStatus,
         stats: {
-          panicAlertsToday: Math.floor(Math.random() * 3), // 0-2 panic alerts hari ini
+          panicAlertsToday: 0, // Will be set based on duty status
           totalReports: Math.floor(Math.random() * 45) + 15, // 15-60 total laporan
           onDutyThisWeek: Math.floor(Math.random() * 4) + 1 // 1-5 hari bertugas minggu ini
         },
         recentActivities: [],
         upcomingShifts: generateUpcomingShifts(),
-        todayPanicAlerts: generateTodayPanicAlerts(),
-        todayReports: generateTodayReports()
+        todayPanicAlerts: [], // Will be set based on duty status
+        todayReports: [] // Will be set based on duty status
       };
 
       // Try to fetch real data dari API
@@ -352,55 +354,98 @@ export default function VolunteerDashboard() {
         console.log("My shifts API not available, using mock data");
       }
 
-      // Try to fetch panic alerts hari ini
-      try {
-        const todayPanicResponse = await fetch("/api/relawan/panic-reports/today", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
-        if (todayPanicResponse.ok) {
-          const panicData = await todayPanicResponse.json();
-          if (panicData && panicData.data) {
-            newData.todayPanicAlerts = panicData.data;
-            newData.stats.panicAlertsToday = panicData.data.length;
+      // Only generate dummy panic alerts and reports if on duty
+      if (newData.todayStatus.is_on_duty) {
+        // Try to fetch panic alerts hari ini
+        try {
+          const todayPanicResponse = await fetch("/api/relawan/panic-reports/today", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (todayPanicResponse.ok) {
+            const panicData = await todayPanicResponse.json();
+            if (panicData && panicData.data) {
+              newData.todayPanicAlerts = panicData.data;
+              newData.stats.panicAlertsToday = panicData.data.length;
+            }
+          } else {
+            // Use dummy data only if on duty
+            newData.todayPanicAlerts = generateTodayPanicAlerts();
+            newData.stats.panicAlertsToday = newData.todayPanicAlerts.length;
           }
+        } catch {
+          console.log("Today panic reports API not available, using mock data");
+          newData.todayPanicAlerts = generateTodayPanicAlerts();
+          newData.stats.panicAlertsToday = newData.todayPanicAlerts.length;
         }
-      } catch {
-        console.log("Today panic reports API not available, using mock data");
-      }
 
-      // Try to fetch reports data
-      try {
-        const reportsResponse = await fetch("/api/reports", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
-        if (reportsResponse.ok) {
-          const reportsData = await reportsResponse.json();
-          let reports = [];
+        // Try to fetch reports data for today only if on duty
+        try {
+          const reportsResponse = await fetch("/api/reports", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
           
-          if (reportsData && reportsData.data && Array.isArray(reportsData.data)) {
-            reports = reportsData.data;
-          } else if (Array.isArray(reportsData)) {
-            reports = reportsData;
+          if (reportsResponse.ok) {
+            const reportsData = await reportsResponse.json();
+            let reports = [];
+            
+            if (reportsData && reportsData.data && Array.isArray(reportsData.data)) {
+              reports = reportsData.data;
+            } else if (Array.isArray(reportsData)) {
+              reports = reportsData;
+            }
+            
+            newData.stats.totalReports = reports.length;
+            
+            // Filter laporan hari ini
+            const today = new Date().toDateString();
+            newData.todayReports = reports.filter((report: { created_at: string }) => 
+              new Date(report.created_at).toDateString() === today
+            ).slice(0, 5);
+          } else {
+            // Use dummy data only if on duty
+            newData.todayReports = generateTodayReports();
           }
-          
-          newData.stats.totalReports = reports.length;
-          
-          // Filter laporan hari ini
-          const today = new Date().toDateString();
-          newData.todayReports = reports.filter((report: { created_at: string }) => 
-            new Date(report.created_at).toDateString() === today
-          ).slice(0, 5);
+        } catch {
+          console.log("Reports API not available, using mock data");
+          newData.todayReports = generateTodayReports();
         }
-      } catch {
-        console.log("Reports API not available, using mock data");
+      } else {
+        // If not on duty, set panic alerts and today reports to empty
+        newData.stats.panicAlertsToday = 0;
+        newData.todayPanicAlerts = [];
+        newData.todayReports = [];
+        
+        // Still try to get total reports count for overall stats
+        try {
+          const reportsResponse = await fetch("/api/reports", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (reportsResponse.ok) {
+            const reportsData = await reportsResponse.json();
+            let reports = [];
+            
+            if (reportsData && reportsData.data && Array.isArray(reportsData.data)) {
+              reports = reportsData.data;
+            } else if (Array.isArray(reportsData)) {
+              reports = reportsData;
+            }
+            
+            newData.stats.totalReports = reports.length;
+          }
+        } catch {
+          console.log("Reports API not available for total count");
+        }
       }
 
       // Generate recent activities dari data panic dan laporan hari ini
