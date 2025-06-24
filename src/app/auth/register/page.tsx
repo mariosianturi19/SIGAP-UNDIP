@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -14,20 +14,29 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 
-// Skema validasi formulir dengan Zod
-const registerFormSchema = z
-  .object({
+// Helper function to determine user type based on email
+const getUserTypeFromEmail = (email: string) => {
+  if (email.endsWith("@students.undip.ac.id")) return "student"
+  if (email.endsWith("@lecturer.undip.ac.id")) return "lecturer"
+  if (email.endsWith("@staff.undip.ac.id")) return "staff"
+  return null
+}
+
+// Dynamic schema based on email domain
+const createRegisterFormSchema = (userType: string | null) => {
+  const baseSchema = {
     name: z.string().min(2, "Nama harus memiliki minimal 2 karakter"),
     email: z
       .string()
       .email("Silakan masukkan alamat email yang valid")
-      .refine((email) => email.endsWith("@students.undip.ac.id"), "Silakan gunakan email @students.undip.ac.id Anda"),
-    nim: z
-      .string()
-      .min(14, "NIM harus 14 digit")
-      .max(14, "NIM harus 14 digit")
-      .regex(/^\d+$/, "NIM hanya boleh berisi angka"),
-    jurusan: z.string().min(2, "Jurusan harus memiliki minimal 2 karakter"),
+      .refine(
+        (email) => 
+          email.endsWith("@students.undip.ac.id") || 
+          email.endsWith("@lecturer.undip.ac.id") || 
+          email.endsWith("@staff.undip.ac.id"),
+        "Silakan gunakan email official UNDIP (@students.undip.ac.id, @lecturer.undip.ac.id, atau @staff.undip.ac.id)"
+      ),
+    prodi: z.string().min(2, "Prodi harus memiliki minimal 2 karakter"),
     no_telp: z
       .string()
       .min(11, "Nomor telepon harus minimal 11 digit")
@@ -41,13 +50,58 @@ const registerFormSchema = z
       .regex(/[0-9]/, "Kata sandi harus mengandung minimal 1 angka")
       .regex(/[^A-Za-z0-9]/, "Kata sandi harus mengandung minimal 1 simbol"),
     confirmPassword: z.string().min(8, "Kata sandi harus minimal 8 karakter"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Kata sandi tidak cocok",
-    path: ["confirmPassword"],
-  })
+  }
 
-type RegisterFormValues = z.infer<typeof registerFormSchema>
+  // Dynamic nim_nip field based on user type
+  if (userType === "student") {
+    return z
+      .object({
+        ...baseSchema,
+        nim_nip: z
+          .string()
+          .min(14, "NIM harus 14 digit")
+          .max(14, "NIM harus 14 digit")
+          .regex(/^\d+$/, "NIM hanya boleh berisi angka"),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: "Kata sandi tidak cocok",
+        path: ["confirmPassword"],
+      })
+  } else if (userType === "lecturer" || userType === "staff") {
+    return z
+      .object({
+        ...baseSchema,
+        nim_nip: z
+          .string()
+          .min(18, "NIP harus minimal 18 karakter")
+          .max(25, "NIP maksimal 25 karakter"),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: "Kata sandi tidak cocok",
+        path: ["confirmPassword"],
+      })
+  } else {
+    return z
+      .object({
+        ...baseSchema,
+        nim_nip: z.string().min(1, "NIM/NIP diperlukan"),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: "Kata sandi tidak cocok",
+        path: ["confirmPassword"],
+      })
+  }
+}
+
+type RegisterFormValues = {
+  name: string
+  email: string
+  nim_nip: string
+  prodi: string
+  no_telp: string
+  password: string
+  confirmPassword: string
+}
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -56,6 +110,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [shakeError, setShakeError] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [userType, setUserType] = useState<string | null>(null)
   const [passwordStrength, setPasswordStrength] = useState({
     hasUppercase: false,
     hasLowercase: false,
@@ -64,37 +119,62 @@ export default function RegisterPage() {
     hasMinLength: false
   });
 
+  const registerFormSchema = createRegisterFormSchema(userType)
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
       name: "",
       email: "",
-      nim: "",
-      jurusan: "",
+      nim_nip: "",
+      prodi: "",
       no_telp: "",
       password: "",
       confirmPassword: "",
     },
+    mode: "onChange"
   })
+
+  // Watch email field to determine user type
+  const emailValue = form.watch("email")
+
+  useEffect(() => {
+    const newUserType = getUserTypeFromEmail(emailValue)
+    if (newUserType !== userType) {
+      setUserType(newUserType)
+      // Clear nim_nip field when user type changes
+      form.setValue("nim_nip", "")
+      form.clearErrors("nim_nip")
+    }
+  }, [emailValue, userType, form])
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true)
     setError(null)
 
     try {
+      // Prepare data based on user type
+      const submitData: any = {
+        name: data.name,
+        email: data.email,
+        prodi: data.prodi,
+        no_telp: data.no_telp,
+        password: data.password,
+      }
+
+      // Add nim_nip as nim or nip based on user type
+      if (userType === "student") {
+        submitData.nim = data.nim_nip
+      } else if (userType === "lecturer" || userType === "staff") {
+        submitData.nip = data.nim_nip
+      }
+
       const response = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          nim: data.nim,
-          jurusan: data.jurusan,
-          no_telp: data.no_telp,
-          password: data.password,
-        }),
+        body: JSON.stringify(submitData),
       });
 
       const result = await response.json()
@@ -145,6 +225,49 @@ export default function RegisterPage() {
     });
   };
 
+  // Get field label and placeholder based on user type
+  const getNimNipConfig = () => {
+    if (userType === "student") {
+      return {
+        label: "NIM (Nomor Induk Mahasiswa)",
+        placeholder: "21120119120001",
+        maxLength: 14
+      }
+    } else if (userType === "lecturer") {
+      return {
+        label: "NIP (Nomor Induk Pegawai)",
+        placeholder: "197001011999031001",
+        maxLength: 25
+      }
+    } else if (userType === "staff") {
+      return {
+        label: "NIP (Nomor Induk Pegawai)",
+        placeholder: "197001011999031001",
+        maxLength: 25
+      }
+    } else {
+      return {
+        label: "NIM / NIP ",
+        placeholder: "Masukkan NIM atau NIP",
+        maxLength: 25
+      }
+    }
+  }
+
+  const getProdiLabel = () => {
+    if (userType === "student") {
+      return "Prodi"
+    } else if (userType === "lecturer") {
+      return "Prodi"
+    } else if (userType === "staff") {
+      return "Prodi"
+    } else {
+      return "Prodi"
+    }
+  }
+
+  const nimNipConfig = getNimNipConfig()
+
   return (
     <div className="relative flex min-h-screen w-full">
       {/* Gambar Latar Belakang */}
@@ -186,7 +309,7 @@ export default function RegisterPage() {
           <div className="overflow-hidden rounded-2xl bg-white shadow-xl transition-all duration-300 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-t-2xl">
               <h2 className="text-2xl font-bold text-white text-center">Buat Akun</h2>
-              <p className="text-gray-300 text-center mt-1">Daftar sebagai mahasiswa</p>
+              <p className="text-gray-300 text-center mt-1">Daftar sebagai civitas akademik UNDIP</p>
             </div>
 
             {error && (
@@ -200,6 +323,7 @@ export default function RegisterPage() {
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-5 bg-white">
+                {/* Nama Lengkap */}
                 <FormField
                   control={form.control}
                   name="name"
@@ -226,25 +350,26 @@ export default function RegisterPage() {
                   )}
                 />
 
+                {/* Alamat Email Official UNDIP */}
                 <FormField
                   control={form.control}
-                  name="nim"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">NIM (Nomor Induk Mahasiswa)</FormLabel>
+                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Email Official UNDIP</FormLabel>
                       <div
-                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "nim" ? "animate-shake" : ""} ${form.formState.errors.nim ? "ring-2 ring-red-400" : ""}`}
+                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "email" ? "animate-shake" : ""} ${form.formState.errors.email ? "ring-2 ring-red-400" : ""}`}
                       >
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <Hash size={18} />
+                          <Mail size={18} />
                         </span>
                         <FormControl>
                           <Input
-                            placeholder="21120119120001"
+                            type="email"
+                            placeholder="E-mail official UNDIP"
                             className="pl-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}
-                            maxLength={14}
                           />
                         </FormControl>
                       </div>
@@ -253,23 +378,57 @@ export default function RegisterPage() {
                   )}
                 />
 
+                {/* NIM/NIP Field */}
                 <FormField
                   control={form.control}
-                  name="jurusan"
+                  name="nim_nip"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">{nimNipConfig.label}</FormLabel>
+                      <div
+                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "nim_nip" ? "animate-shake" : ""} ${form.formState.errors.nim_nip ? "ring-2 ring-red-400" : ""}`}
+                      >
+                        <span className={`absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none ${!userType ? 'text-gray-300' : 'text-gray-400'}`}>
+                          <Hash size={18} />
+                        </span>
+                        <FormControl>
+                          <Input
+                            placeholder={!userType ? "Isi email UNDIP terlebih dahulu" : nimNipConfig.placeholder}
+                            className="pl-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
+                            {...field}
+                            disabled={isLoading || !userType}
+                            maxLength={nimNipConfig.maxLength}
+                          />
+                        </FormControl>
+                      </div>
+                      {!userType && emailValue && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Silakan gunakan email official UNDIP yang valid untuk melanjutkan
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Prodi */}
+                <FormField
+                  control={form.control}
+                  name="prodi"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="block text-sm font-medium text-gray-700 mb-1">
-                        Jurusan
+                        {getProdiLabel()}
                       </FormLabel>
                       <div
-                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "jurusan" ? "animate-shake" : ""} ${form.formState.errors.jurusan ? "ring-2 ring-red-400" : ""}`}
+                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "prodi" ? "animate-shake" : ""} ${form.formState.errors.prodi ? "ring-2 ring-red-400" : ""}`}
                       >
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                           <BookOpen size={18} />
                         </span>
                         <FormControl>
                           <Input
-                            placeholder="Teknik Informatika"
+                            placeholder="Teknik Komputer"
                             className="pl-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}
@@ -281,6 +440,7 @@ export default function RegisterPage() {
                   )}
                 />
 
+                {/* Nomor Telepon */}
                 <FormField
                   control={form.control}
                   name="no_telp"
@@ -309,34 +469,8 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Alamat Email</FormLabel>
-                      <div
-                        className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${shakeError === "email" ? "animate-shake" : ""} ${form.formState.errors.email ? "ring-2 ring-red-400" : ""}`}
-                      >
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                          <Mail size={18} />
-                        </span>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="email.anda@students.undip.ac.id"
-                            className="pl-10 border-0 shadow-gray-400 bg-white focus:bg-white transition-all duration-200"
-                            {...field}
-                            disabled={isLoading}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
+                {/* Kata Sandi */}
                 <FormField
                   control={form.control}
                   name="password"
@@ -400,6 +534,7 @@ export default function RegisterPage() {
                   )}
                 />
 
+                {/* Konfirmasi Kata Sandi */}
                 <FormField
                   control={form.control}
                   name="confirmPassword"
