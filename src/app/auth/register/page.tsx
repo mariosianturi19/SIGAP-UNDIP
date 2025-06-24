@@ -59,8 +59,8 @@ const createRegisterFormSchema = (userType: string | null) => {
         ...baseSchema,
         nim_nip: z
           .string()
-          .min(14, "NIM harus 14 digit")
-          .max(14, "NIM harus 14 digit")
+          .min(14, "NIM harus 14 digit dan hanya berisi angka")
+          .max(14, "NIM harus 14 digit dan hanya berisi angka")
           .regex(/^\d+$/, "NIM hanya boleh berisi angka"),
       })
       .refine((data) => data.password === data.confirmPassword, {
@@ -153,7 +153,6 @@ export default function RegisterPage() {
     const newUserType = getUserTypeFromEmail(emailValue)
     if (newUserType !== userType) {
       setUserType(newUserType)
-      // Clear nim_nip field when user type changes
       form.setValue("nim_nip", "")
       form.clearErrors("nim_nip")
     }
