@@ -103,6 +103,17 @@ type RegisterFormValues = {
   confirmPassword: string
 }
 
+// Add interface for submit data
+interface SubmitData {
+  name: string
+  email: string
+  prodi: string
+  no_telp: string
+  password: string
+  nim?: string
+  nip?: string
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -154,7 +165,7 @@ export default function RegisterPage() {
 
     try {
       // Prepare data based on user type
-      const submitData: any = {
+      const submitData: SubmitData = {
         name: data.name,
         email: data.email,
         prodi: data.prodi,
