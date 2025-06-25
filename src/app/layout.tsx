@@ -20,9 +20,14 @@ export const metadata: Metadata = {
   description: "Sistem Informasi Gawat dan Pelaporan Universitas Diponegoro",
   icons: {
     icon: [
-      { url: '/images/Undip-Logo.png' }, // Ikon utama dari file PNG
+      { url: '/images/icon.ico', sizes: 'any' },
+      { url: '/images/Undip-Logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/Undip-Logo.png', sizes: '16x16', type: 'image/png' },
     ],
-    apple: { url: '/images/Undip-Logo.png' }, // Untuk perangkat Apple
+    apple: [
+      { url: '/images/Undip-Logo.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/images/icon.ico',
   },
 };
 
@@ -33,6 +38,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        {/* Multiple favicon formats for better compatibility */}
+        <link rel="icon" href="/images/icon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/images/Undip-Logo.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/images/Undip-Logo.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/images/Undip-Logo.png" />
+        
+        {/* Force refresh icon cache */}
+        <meta name="msapplication-TileImage" content="/images/Undip-Logo.png" />
+        <meta name="msapplication-TileColor" content="#ffffff" />
+      </head>
       <body 
         className={`${geistSans.variable} ${geistMono.variable} antialiased`} 
         suppressHydrationWarning
