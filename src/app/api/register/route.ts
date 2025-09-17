@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         { message: "Invalid response from server" },
         { status: 500 }
       );
+      
     }
 
     // Return the response with the same status
