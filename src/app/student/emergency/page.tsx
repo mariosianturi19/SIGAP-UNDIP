@@ -65,56 +65,86 @@ export default function EmergencyPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    dismissLocationPrompt();
+                  }
+                }}
               >
                 <motion.div
-                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                  className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 max-w-md w-full p-6 relative overflow-hidden"
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl" />
-                  
-                  <div className="text-center relative">
+                  {/* Icon Header */}
+                  <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-8 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
                     <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
                       transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                      className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 mb-4 shadow-lg"
+                      className="relative inline-flex items-center justify-center h-20 w-20 rounded-full bg-white/20 backdrop-blur-sm mb-4 shadow-lg"
                     >
-                      <MapPin className="h-6 w-6 text-white" />
+                      <MapPin className="h-10 w-10 text-white" />
                     </motion.div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">
-                      Izinkan Akses Lokasi
-                    </h3>
-                    <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                      Untuk menggunakan fitur tombol darurat, SIGAP UNDIP memerlukan akses ke lokasi Anda. 
-                      Informasi lokasi hanya akan digunakan saat mengirim sinyal darurat.
-                    </p>
-                    <div className="flex space-x-3">
+                    <h2 className="text-2xl font-bold text-white mb-2">Izinkan Akses Lokasi</h2>
+                    <p className="text-gray-300 text-sm">Untuk menggunakan fitur tombol darurat</p>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 space-y-5">
+                    <div className="space-y-3">
+                      <p className="text-gray-700 text-center leading-relaxed">
+                        Untuk menggunakan fitur tombol darurat, SIGAP UNDIP memerlukan akses ke lokasi Anda. Informasi lokasi hanya akan digunakan saat mengirim sinyal darurat.
+                      </p>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleLocationRequest}
+                        className="w-full bg-gradient-to-r from-gray-800 to-black hover:from-black hover:to-gray-800 text-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        disabled={locationLoading}
+                        size="lg"
+                      >
+                        {locationLoading ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Memproses...
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <CheckCircle className="mr-2 h-5 w-5" />
+                            Izinkan
+                          </div>
+                        )}
+                      </Button>
+
                       <Button
                         variant="outline"
                         onClick={dismissLocationPrompt}
-                        className="flex-1 border-gray-200 hover:bg-gray-50/80 backdrop-blur-sm text-sm"
-                        size="sm"
+                        className="w-full border-2 border-gray-300 hover:bg-gray-50 text-gray-700 hover:border-gray-400 transition-all duration-200"
+                        size="lg"
                       >
                         Nanti Saja
                       </Button>
-                      <Button
-                        onClick={handleLocationRequest}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg text-sm"
-                        disabled={locationLoading}
-                        size="sm"
-                      >
-                        {locationLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
-                            Memproses...
-                          </div>
-                        ) : "Izinkan"}
-                      </Button>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <div className="flex items-start">
+                        <Shield className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-blue-900 font-medium">Informasi Privasi</p>
+                          <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                            Lokasi Anda hanya akan diakses saat Anda menekan tombol darurat dan akan dikirim ke tim keamanan kampus.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

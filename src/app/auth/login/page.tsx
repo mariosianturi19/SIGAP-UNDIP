@@ -55,6 +55,18 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        // Check if email verification required (403 Forbidden)
+        if (response.status === 403 && result.email_verification_required) {
+          toast.error("Email belum diverifikasi", {
+            description: "Silakan verifikasi email Anda terlebih dahulu",
+          });
+          
+          // Redirect to verify-email page
+          const emailToVerify = result.email || data.email;
+          router.push(`/auth/verify-email?email=${encodeURIComponent(emailToVerify)}`);
+          return;
+        }
+        
         throw new Error(result.message || "Gagal masuk");
       }
 
@@ -186,7 +198,15 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700 mb-1">Password</FormLabel>
+                      <div className="flex items-center justify-between mb-1">
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700">Password</FormLabel>
+                        <Link
+                          href="/auth/forgot-password"
+                          className="text-xs text-red-600 hover:text-red-700 dark:text-red-600 dark:hover:text-red-700 font-medium transition-colors"
+                        >
+                          Lupa Password?
+                        </Link>
+                      </div>
                       <div
                         className={`relative rounded-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-gray-500 ${form.formState.errors.password ? "ring-2 ring-red-400" : ""}`}
                       >

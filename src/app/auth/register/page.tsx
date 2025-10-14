@@ -193,12 +193,12 @@ export default function RegisterPage() {
         throw new Error(result.message || "Pendaftaran gagal")
       }
 
-      toast.success("Akun berhasil dibuat", {
-        description: "Akun Anda telah dibuat dengan sukses",
+      toast.success("Pendaftaran berhasil!", {
+        description: "Silakan cek email Anda untuk kode verifikasi OTP",
       })
 
-      // Arahkan ke halaman login
-      router.push("/auth/login")
+      // Redirect ke halaman verify-email dengan email parameter
+      router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`)
     } catch (error) {
       console.error("Kesalahan pendaftaran:", error)
 
