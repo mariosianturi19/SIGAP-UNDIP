@@ -16,7 +16,7 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const emailFromQuery = searchParams.get("email") || "";
 
-  const [email, setEmail] = useState(emailFromQuery);
+  const [email] = useState(emailFromQuery);
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
