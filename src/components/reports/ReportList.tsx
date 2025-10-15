@@ -54,6 +54,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
+import BulkDeleteDialog, { BulkDeleteFilters } from "@/components/admin/BulkDeleteDialog";
+import { bulkDeleteReports } from "@/lib/deleteApi";
 
 // Definisikan interface untuk laporan dan pengguna
 interface ReportUser {
@@ -130,6 +132,7 @@ export default function ReportList() {
  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
  const [updateStatus, setUpdateStatus] = useState("");
  const [adminNotes, setAdminNotes] = useState("");
+ const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
  useEffect(() => {
    fetchReports();
@@ -472,6 +475,27 @@ export default function ReportList() {
    await updateReportStatus(reportId, newStatus, defaultNote);
  };
 
+ // Bulk delete handler
+ const handleBulkDelete = async (filters: BulkDeleteFilters) => {
+   try {
+     const response = await bulkDeleteReports({
+       start_date: filters.start_date,
+       end_date: filters.end_date,
+       status: filters.status as 'pending' | 'in_progress' | 'resolved' | 'rejected' | undefined,
+       problem_type: filters.problem_type,
+     });
+
+     toast.success(`Berhasil menghapus ${response.deleted_count} laporan`);
+
+     // Refresh data
+     await fetchReports();
+   } catch (error) {
+     console.error("Error bulk deleting reports:", error);
+     toast.error(error instanceof Error ? error.message : "Gagal menghapus laporan");
+     throw error;
+   }
+ };
+
  // Variasi animasi
  const containerVariants = {
    hidden: { opacity: 0 },
@@ -540,6 +564,15 @@ export default function ReportList() {
            </div>
          </div>
          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+           <Button
+             onClick={() => setShowBulkDeleteDialog(true)}
+             variant="outline"
+             className="border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
+             size="sm"
+           >
+             <Trash2 className="h-4 w-4 mr-2" />
+             Hapus Massal
+           </Button>
            <Button
              onClick={handleRefresh}
              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
@@ -1146,6 +1179,14 @@ export default function ReportList() {
          </AlertDialogFooter>
        </AlertDialogContent>
      </AlertDialog>
+
+    {/* Bulk Delete Dialog */}
+    <BulkDeleteDialog
+      isOpen={showBulkDeleteDialog}
+      onClose={() => setShowBulkDeleteDialog(false)}
+      onConfirm={handleBulkDelete}
+      type="report"
+    />
    </div>
  );
 }

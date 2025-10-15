@@ -1,5 +1,6 @@
 // src/app/api/volunteers/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // GET single volunteer
 export async function GET(
@@ -22,7 +23,7 @@ export async function GET(
 
     const volunteerId = id;
     // Use the correct API endpoint
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/admin/relawan/${volunteerId}`, {
+    const response = await fetch(buildApiUrl(`/admin/relawan/${volunteerId}`), {
       method: "GET",
       headers: {
         "Authorization": authHeader,
@@ -31,13 +32,13 @@ export async function GET(
     });
 
     const responseText = await response.text();
-    console.log(`Volunteer ${volunteerId} details response:`, responseText);
-    
+    log(`Volunteer ${volunteerId} details response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse volunteer details response as JSON:", e);
+      logError("Failed to parse volunteer details response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -46,7 +47,7 @@ export async function GET(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Volunteer details fetch error:", error);
+    logError("Volunteer details fetch error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching volunteer details" },
       { status: 500 }
@@ -77,7 +78,7 @@ export async function PUT(
     const body = await request.json();
 
     // Use the CORRECT API endpoint for updating users
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/users/${volunteerId}`, {
+    const response = await fetch(buildApiUrl(`/users/${volunteerId}`), {
       method: "PUT",
       headers: {
         "Authorization": authHeader,
@@ -88,13 +89,13 @@ export async function PUT(
     });
 
     const responseText = await response.text();
-    console.log(`Update volunteer ${volunteerId} response:`, responseText);
-    
+    log(`Update volunteer ${volunteerId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse update volunteer response as JSON:", e);
+      logError("Failed to parse update volunteer response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -103,7 +104,7 @@ export async function PUT(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Update volunteer error:", error);
+    logError("Update volunteer error:", error);
     return NextResponse.json(
       { message: "An error occurred while updating volunteer" },
       { status: 500 }
@@ -133,7 +134,7 @@ export async function DELETE(
     const volunteerId = id;
     
     // Use the correct API endpoint for deleting users
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/admin/users/${volunteerId}`, {
+    const response = await fetch(buildApiUrl(`/admin/users/${volunteerId}`), {
       method: "DELETE",
       headers: {
         "Authorization": authHeader,
@@ -142,13 +143,13 @@ export async function DELETE(
     });
 
     const responseText = await response.text();
-    console.log(`Delete volunteer ${volunteerId} response:`, responseText);
-    
+    log(`Delete volunteer ${volunteerId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse delete volunteer response as JSON:", e);
+      logError("Failed to parse delete volunteer response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -157,7 +158,7 @@ export async function DELETE(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Delete volunteer error:", error);
+    logError("Delete volunteer error:", error);
     return NextResponse.json(
       { message: "An error occurred while deleting volunteer" },
       { status: 500 }

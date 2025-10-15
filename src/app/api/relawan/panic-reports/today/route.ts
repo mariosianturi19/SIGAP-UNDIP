@@ -1,5 +1,6 @@
 // src/app/api/relawan/panic-reports/today/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,8 +27,8 @@ export async function GET(request: NextRequest) {
       queryParams.append('status', status);
     }
 
-    const apiUrl = `https://sigap-api-5hk6r.ondigitalocean.app/api/panic/today?${queryParams.toString()}`;
-    console.log("Fetching today panic reports from:", apiUrl);
+    const apiUrl = buildApiUrl(`/panic/today?${queryParams.toString()}`);
+    log("Fetching today panic reports from:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -38,13 +39,13 @@ export async function GET(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("Get today panic reports response:", responseText);
-    
+    log("Get today panic reports response:", responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Get today panic reports error:", error);
+    logError("Get today panic reports error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching today's panic reports" },
       { status: 500 }

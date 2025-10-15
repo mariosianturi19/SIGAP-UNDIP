@@ -1,18 +1,15 @@
-// src/app/api/relawan/panic/[id]/handle/route.ts
+// src/app/api/admin/panic/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
-// POST - Handle Panic Report (Relawan)
-export async function POST(
+// DELETE - Delete single panic report (Admin only)
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params karena sekarang berupa Promise
-    const { id } = await params;
-    
     const authHeader = request.headers.get("Authorization");
-    
+
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header is required" },
@@ -20,29 +17,26 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const panicId = id;
+    const { id } = await params;
+    log("Deleting panic report:", id);
 
-    log(`Handling panic report ${panicId}:`, body);
-
-    const response = await fetch(buildApiUrl(`/relawan/panic/${panicId}/handle`), {
-      method: "POST",
+    const apiUrl = buildApiUrl(`/admin/panic/${id}`);
+    const response = await fetch(apiUrl, {
+      method: "DELETE",
       headers: {
         "Authorization": authHeader,
-        "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: JSON.stringify(body),
     });
 
     const responseText = await response.text();
-    log(`Handle panic ${panicId} response:`, responseText);
+    log("External API delete panic response:", responseText);
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      logError("Failed to parse response as JSON:", e);
+      logError("Failed to parse delete panic response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -51,9 +45,9 @@ export async function POST(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    logError("Handle panic error:", error);
+    logError("Delete panic report error:", error);
     return NextResponse.json(
-      { message: "An error occurred while handling panic report" },
+      { message: "An error occurred while deleting panic report" },
       { status: 500 }
     );
   }

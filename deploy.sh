@@ -3,18 +3,19 @@ set -e
 # Configuration - Edit Below This
 SERVER_IP="188.166.189.129"
 SERVER_USER="root"
-SERVER_PASSWORD="#4thDimension" 
+# REMOVED PASSWORD - Use SSH key authentication instead
+# Setup SSH key: ssh-copy-id root@188.166.189.129
 APP_NAME="sigap-undip-frontend"
 APP_DIR="/var/www/$APP_NAME"
 PORT=3000
-BACKEND_API_URL="http://152.42.171.87/api"  #URL Backend
+BACKEND_API_URL="https://sigap-api-5hk6r.ondigitalocean.app/api"  # Backend API URL
 
 # Dont Edit Below This
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  SIGAP UNDIP - Frontend Deployment                         ║"
 echo "║  Next.js Application                                       ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+echo "╚════════════════════════════════════════════════════════════ ╝"
 echo ""
 echo "   Configuration:"
 echo "   Server: $SERVER_USER@$SERVER_IP"
@@ -232,11 +233,33 @@ cd $APP_DIR
 
 # Create .env.production
 echo "  Creating environment configuration..."
-cat > .env.production << EOF
+cat > .env.production << 'EOFENV'
+# Backend API Configuration
 NEXT_PUBLIC_API_URL=$BACKEND_API_URL
+
+# Application Environment
 NODE_ENV=production
 PORT=$PORT
-EOF
+
+# Feature Flags
+NEXT_PUBLIC_ENABLE_AUTO_REFRESH=true
+NEXT_PUBLIC_REFRESH_INTERVAL=30000
+
+# Disable logs in production
+NEXT_PUBLIC_ENABLE_LOGS=false
+
+# Firebase Storage
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seputipy.appspot.com
+
+# Security Configuration
+NEXT_PUBLIC_TOKEN_EXPIRY_WARNING=300
+NEXT_PUBLIC_MAX_FILE_SIZE=10
+
+# Geolocation Configuration
+NEXT_PUBLIC_LOCATION_TIMEOUT=10000
+NEXT_PUBLIC_LOCATION_MAX_AGE=300000
+NEXT_PUBLIC_LOCATION_MIN_ACCURACY=1000
+EOFENV
 
 # Clean old dependencies and build
 echo "  Cleaning old build..."

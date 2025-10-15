@@ -66,10 +66,13 @@ export default function ReportPhotoPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validasi tipe file - hanya JPG, JPEG dan PNG
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      // Validasi tipe file - sesuai backend: jpeg, jpg, png, gif, bmp, webp, heic, heif, svg
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
+        'image/webp', 'image/heic', 'image/heif', 'image/svg+xml'
+      ];
       if (!allowedTypes.includes(file.type)) {
-        toast.error("Format file tidak didukung. Hanya file JPG, JPEG dan PNG yang diperbolehkan.");
+        toast.error("Format file tidak didukung. Hanya file JPEG, JPG, PNG, GIF, BMP, WEBP, HEIC, HEIF, dan SVG yang diperbolehkan.");
         // Reset input file
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
@@ -77,10 +80,10 @@ export default function ReportPhotoPage() {
         return;
       }
 
-      // Validasi ukuran file (max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB dalam bytes
+      // Validasi ukuran file (max 20MB)
+      const maxSize = 20 * 1024 * 1024; // 20MB dalam bytes
       if (file.size > maxSize) {
-        toast.error("Ukuran file terlalu besar. Maksimal 10MB.");
+        toast.error("Ukuran file terlalu besar. Maksimal 20MB.");
         // Reset input file
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
@@ -139,12 +142,15 @@ export default function ReportPhotoPage() {
       errors.photo = "Silakan unggah gambar untuk laporan Anda";
     } else {
       // Validasi tambahan untuk file
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
+        'image/webp', 'image/heic', 'image/heif', 'image/svg+xml'
+      ];
       if (!allowedTypes.includes(selectedFile.type)) {
-        errors.photo = "Format file tidak didukung. Hanya JPG, JPEG dan PNG yang diperbolehkan.";
+        errors.photo = "Format file tidak didukung. Hanya JPEG, JPG, PNG, GIF, BMP, WEBP, HEIC, HEIF, dan SVG yang diperbolehkan.";
       }
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        errors.photo = "Ukuran file terlalu besar. Maksimal 10MB.";
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        errors.photo = "Ukuran file terlalu besar. Maksimal 20MB.";
       }
     }
     
@@ -218,13 +224,16 @@ export default function ReportPhotoPage() {
       }
       
       // Validasi ulang file sebelum upload
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
+        'image/webp', 'image/heic', 'image/heif', 'image/svg+xml'
+      ];
       if (!allowedTypes.includes(selectedFile.type)) {
-        throw new Error("Format file tidak didukung. Hanya JPG, JPEG dan PNG yang diperbolehkan.");
+        throw new Error("Format file tidak didukung. Hanya JPEG, JPG, PNG, GIF, BMP, WEBP, HEIC, HEIF, dan SVG yang diperbolehkan.");
       }
       
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        throw new Error("Ukuran file terlalu besar. Maksimal 10MB.");
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        throw new Error("Ukuran file terlalu besar. Maksimal 20MB.");
       }
       
       photoFormData.append('photo', selectedFile, selectedFile.name);
@@ -496,7 +505,7 @@ export default function ReportPhotoPage() {
                               </Button>
                             </div>
                             <p className="text-xs text-gray-500 mt-3">
-                              Format: JPG, JPEG, PNG • Maksimal ukuran: 10MB
+                              Format: JPEG, JPG, PNG, GIF, BMP, WEBP, HEIC, HEIF, SVG • Maksimal ukuran: 20MB
                             </p>
                           </motion.div>
                         )}
@@ -665,7 +674,7 @@ export default function ReportPhotoPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".jpg,.jpeg,.png"
+            accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.heic,.heif,.svg"
             onChange={handleFileSelect}
             className="hidden"
           />

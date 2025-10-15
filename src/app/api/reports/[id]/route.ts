@@ -1,5 +1,6 @@
 // src/app/api/reports/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // GET Report by ID
 export async function GET(
@@ -19,9 +20,9 @@ export async function GET(
       );
     }
 
-    console.log(`Fetching report ${id}`);
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${id}`, {
+    log(`Fetching report ${id}`);
+
+    const response = await fetch(buildApiUrl(`/reports/${id}`), {
       method: "GET",
       headers: {
         "Authorization": authHeader,
@@ -30,13 +31,13 @@ export async function GET(
     });
 
     const responseText = await response.text();
-    console.log(`Get report ${id} response:`, responseText);
-    
+    log(`Get report ${id} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse get report response as JSON:", e);
+      logError("Failed to parse get report response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -45,7 +46,7 @@ export async function GET(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Get report error:", error);
+    logError("Get report error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching the report" },
       { status: 500 }
@@ -80,9 +81,9 @@ export async function PATCH(
       );
     }
 
-    console.log(`Updating report ${id}:`, body);
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${id}`, {
+    log(`Updating report ${id}:`, body);
+
+    const response = await fetch(buildApiUrl(`/reports/${id}`), {
       method: "PUT",
       headers: {
         "Authorization": authHeader,
@@ -93,13 +94,13 @@ export async function PATCH(
     });
 
     const responseText = await response.text();
-    console.log(`Update report ${id} response:`, responseText);
-    
+    log(`Update report ${id} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse update report response as JSON:", e);
+      logError("Failed to parse update report response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -108,7 +109,7 @@ export async function PATCH(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Update report error:", error);
+    logError("Update report error:", error);
     return NextResponse.json(
       { message: "An error occurred while updating the report" },
       { status: 500 }
@@ -134,9 +135,9 @@ export async function DELETE(
       );
     }
 
-    console.log(`Deleting report ${id}`);
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/reports/${id}`, {
+    log(`Deleting report ${id}`);
+
+    const response = await fetch(buildApiUrl(`/reports/${id}`), {
       method: "DELETE",
       headers: {
         "Authorization": authHeader,
@@ -145,13 +146,13 @@ export async function DELETE(
     });
 
     const responseText = await response.text();
-    console.log(`Delete report ${id} response:`, responseText);
-    
+    log(`Delete report ${id} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse delete report response as JSON:", e);
+      logError("Failed to parse delete report response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -160,7 +161,7 @@ export async function DELETE(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Delete report error:", error);
+    logError("Delete report error:", error);
     return NextResponse.json(
       { message: "An error occurred while deleting the report" },
       { status: 500 }

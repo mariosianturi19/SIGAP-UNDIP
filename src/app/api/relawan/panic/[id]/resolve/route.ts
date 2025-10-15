@@ -1,5 +1,6 @@
 // src/app/api/relawan/panic/[id]/resolve/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // POST - Resolve Panic Report (Relawan)
 export async function POST(
@@ -22,9 +23,9 @@ export async function POST(
     const body = await request.json();
     const panicId = id;
 
-    console.log(`Resolving panic report ${panicId}:`, body);
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/relawan/panic/${panicId}/resolve`, {
+    log(`Resolving panic report ${panicId}:`, body);
+
+    const response = await fetch(buildApiUrl(`/relawan/panic/${panicId}/resolve`), {
       method: "POST",
       headers: {
         "Authorization": authHeader,
@@ -35,13 +36,13 @@ export async function POST(
     });
 
     const responseText = await response.text();
-    console.log(`Resolve panic ${panicId} response:`, responseText);
-    
+    log(`Resolve panic ${panicId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -50,7 +51,7 @@ export async function POST(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Resolve panic error:", error);
+    logError("Resolve panic error:", error);
     return NextResponse.json(
       { message: "An error occurred while resolving panic report" },
       { status: 500 }

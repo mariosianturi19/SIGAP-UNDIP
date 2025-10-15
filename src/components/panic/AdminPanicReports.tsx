@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { 
-  RefreshCw, 
-  Search, 
-  Loader2, 
-  AlertTriangle, 
-  Clock, 
-  CheckCircle, 
+import {
+  RefreshCw,
+  Search,
+  Loader2,
+  AlertTriangle,
+  Clock,
+  CheckCircle,
   MapPin,
   User,
   Calendar,
@@ -27,7 +27,9 @@ import {
   Activity,
   TrendingUp,
   Map,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
 import { getAccessToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,25 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import BulkDeleteDialog, { BulkDeleteFilters } from "@/components/admin/BulkDeleteDialog";
+import { deleteSinglePanicReport, bulkDeletePanicReports } from "@/lib/deleteApi";
 
 // Interface berdasarkan response API yang sebenarnya
 interface PanicUser {
@@ -111,6 +132,12 @@ export default function AdminPanicReports() {
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+
+  // Delete states
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = useState(false);
+  const [panicToDelete, setPanicToDelete] = useState<PanicReport | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchPanicReports = useCallback(async () => {
     setIsRefreshing(true);
@@ -277,11 +304,57 @@ export default function AdminPanicReports() {
     const now = new Date();
     const reportTime = new Date(createdAt);
     const hoursDiff = (now.getTime() - reportTime.getTime()) / (1000 * 60 * 60);
-    
+
     if (hoursDiff < 1) return { level: 'urgent', color: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800', text: 'Mendesak' };
     if (hoursDiff < 6) return { level: 'high', color: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800', text: 'Tinggi' };
     if (hoursDiff < 24) return { level: 'medium', color: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800', text: 'Sedang' };
     return { level: 'low', color: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", text: 'Rendah' };
+  };
+
+  // Delete functions
+  const handleDeleteClick = (panic: PanicReport) => {
+    setPanicToDelete(panic);
+    setShowSingleDeleteDialog(true);
+  };
+
+  const handleSingleDelete = async () => {
+    if (!panicToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteSinglePanicReport(panicToDelete.id);
+      toast.success("Laporan panic berhasil dihapus");
+
+      // Refresh data
+      await fetchPanicReports();
+
+      setShowSingleDeleteDialog(false);
+      setPanicToDelete(null);
+    } catch (error) {
+      console.error("Error deleting panic report:", error);
+      toast.error(error instanceof Error ? error.message : "Gagal menghapus laporan panic");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async (filters: BulkDeleteFilters) => {
+    try {
+      const response = await bulkDeletePanicReports({
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        status: filters.status as 'pending' | 'responded' | 'resolved' | 'cancelled' | undefined,
+      });
+
+      toast.success(`Berhasil menghapus ${response.deleted_count} laporan panic`);
+
+      // Refresh data
+      await fetchPanicReports();
+    } catch (error) {
+      console.error("Error bulk deleting panic reports:", error);
+      toast.error(error instanceof Error ? error.message : "Gagal menghapus laporan panic");
+      throw error;
+    }
   };
 
   return (
@@ -313,6 +386,15 @@ export default function AdminPanicReports() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              variant="outline"
+              className="border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Hapus Massal
+            </Button>
             <Button
               onClick={() => fetchPanicReports()}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto"
@@ -599,7 +681,33 @@ export default function AdminPanicReports() {
                                   {status.icon}
                                   <span className="ml-1">{status.text}</span>
                                 </Badge>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">#{report.id}</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">#{report.id}</span>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <MoreHorizontal className="h-3 w-3" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                      <DropdownMenuItem
+                                        onClick={() => openInMaps(report.latitude, report.longitude)}
+                                        className="cursor-pointer text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      >
+                                        <Map className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                                        <span>Lihat Lokasi</span>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteClick(report)}
+                                        className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2 text-red-600 dark:text-red-400" />
+                                        <span>Hapus Laporan</span>
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </div>
                               
                               {/* User Info */}
@@ -787,17 +895,34 @@ export default function AdminPanicReports() {
                                   )}
                                 </div>
                                 
-                                {/* Action Button */}
-                                <div className="flex justify-center lg:w-48 lg:flex-col lg:items-end">
+                                {/* Action Buttons */}
+                                <div className="flex justify-center lg:w-48 lg:flex-col lg:items-end space-y-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => openInMaps(report.latitude, report.longitude)}
-                                    className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 shadow-sm"
+                                    className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 shadow-sm w-full"
                                   >
                                     <MapPin className="h-4 w-4 mr-2" />
                                     Lihat di Maps
                                   </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="outline" size="sm" className="w-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <MoreHorizontal className="h-4 w-4 mr-2" />
+                                        Opsi Lainnya
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteClick(report)}
+                                        className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2 text-red-600 dark:text-red-400" />
+                                        <span>Hapus Laporan</span>
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </div>
                             </div>
@@ -879,6 +1004,71 @@ export default function AdminPanicReports() {
           </Card>
         </motion.div>
       )}
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteDialog
+        isOpen={showBulkDeleteDialog}
+        onClose={() => setShowBulkDeleteDialog(false)}
+        onConfirm={handleBulkDelete}
+        type="panic"
+      />
+
+      {/* Single Delete Confirmation Dialog */}
+      <AlertDialog open={showSingleDeleteDialog} onOpenChange={setShowSingleDeleteDialog}>
+        <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900 dark:text-white">
+              Konfirmasi Penghapusan
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+              <div className="space-y-3 mt-2">
+                <p>
+                  Anda akan menghapus laporan panic <span className="font-semibold">#{panicToDelete?.id}</span> dari:
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1 text-sm">
+                  <p>• <span className="font-medium">Pelapor:</span> {panicToDelete?.user.name}</p>
+                  <p>• <span className="font-medium">Email:</span> {panicToDelete?.user.email}</p>
+                  <p>• <span className="font-medium">Status:</span> {panicToDelete && getStatusBadge(panicToDelete.status).text}</p>
+                  <p>• <span className="font-medium">Tanggal:</span> {panicToDelete && formatDateTime(panicToDelete.created_at)}</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <p className="text-red-800 dark:text-red-300 font-semibold text-sm">
+                    ⚠ Tindakan ini tidak dapat dibatalkan!
+                  </p>
+                  <p className="text-red-700 dark:text-red-400 text-sm mt-1">
+                    Data yang telah dihapus tidak dapat dikembalikan.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isDeleting}
+              className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSingleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Ya, Hapus
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

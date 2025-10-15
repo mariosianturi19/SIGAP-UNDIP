@@ -80,7 +80,25 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error('API request error:', error);
+      // Enhanced error logging
+      console.error('API request error:', {
+        url,
+        method,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        // This usually means CORS, network issues, or backend is down
+        const enhancedError = new Error(
+          `Network error: Unable to connect to ${this.baseUrl}. ` +
+          `Please check: 1) Backend server is running, 2) CORS is configured, 3) Network connection`
+        );
+        enhancedError.name = 'NetworkError';
+        throw enhancedError;
+      }
+
       throw error;
     }
   }
@@ -103,7 +121,30 @@ class ApiClient {
   }
 }
 
+// Get API URL from environment variable with fallback
+const getApiBaseUrl = (): string => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  // Debug log
+  if (typeof window !== 'undefined') {
+    console.log('🔧 API Configuration:', {
+      envValue: apiUrl,
+      willUse: apiUrl || 'https://sigap-api-5hk6r.ondigitalocean.app'
+    });
+  }
+
+  if (!apiUrl) {
+    console.warn('⚠️ NEXT_PUBLIC_API_URL is not defined, using fallback URL');
+    return 'https://sigap-api-5hk6r.ondigitalocean.app';
+  }
+
+  // Remove trailing slash if present
+  const finalUrl = apiUrl.replace(/\/$/, '');
+  console.log('✅ Using API URL:', finalUrl);
+  return finalUrl;
+};
+
 // Create and export an instance with our API base URL
 export const apiClient = new ApiClient({
-  baseUrl: 'https://sigap-api-5hk6r.ondigitalocean.app/api',
+  baseUrl: getApiBaseUrl(),
 });

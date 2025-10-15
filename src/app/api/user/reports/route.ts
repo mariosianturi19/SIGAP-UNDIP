@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // Define the minimum type for a report based on expected usage
 type Report = {
@@ -52,11 +53,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
     const problem_type = searchParams.get('problem_type') || '';
     
-    console.log("Fetching user reports with params:", { page, status, problem_type });
+    log("Fetching user reports with params:", { page, status, problem_type });
 
     // Forward the request to the external API - menggunakan endpoint reports biasa
     // API akan otomatis filter berdasarkan user yang login (berdasarkan token)
-    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/reports", {
+    const response = await fetch(buildApiUrl("/reports"), {
       method: "GET",
       headers: {
         "Authorization": authHeader,
@@ -66,14 +67,14 @@ export async function GET(request: NextRequest) {
 
     // Get the response as text first (for debugging)
     const responseText = await response.text();
-    console.log("External API reports response:", responseText);
-    
+    log("External API reports response:", responseText);
+
     // Try to parse as JSON
     let data: unknown;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse reports response as JSON:", e);
+      logError("Failed to parse reports response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -151,7 +152,7 @@ export async function GET(request: NextRequest) {
     // Return the response
     return NextResponse.json(responseData, { status: 200 });
   } catch (error) {
-    console.error("User reports fetch error:", error);
+    logError("User reports fetch error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching user reports" },
       { status: 500 }

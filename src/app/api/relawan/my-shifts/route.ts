@@ -1,5 +1,6 @@
 // src/app/api/relawan/my-shifts/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,8 +22,8 @@ export async function GET(request: NextRequest) {
       queryParams.append('week_offset', weekOffset);
     }
 
-    const apiUrl = `https://sigap-api-5hk6r.ondigitalocean.app/api/relawan/my-shifts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    console.log("Fetching my shifts from:", apiUrl);
+    const apiUrl = buildApiUrl(`/relawan/my-shifts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
+    log("Fetching my shifts from:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -33,13 +34,13 @@ export async function GET(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("Get my shifts response:", responseText);
-    
+    log("Get my shifts response:", responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Get my shifts error:", error);
+    logError("Get my shifts error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching shifts" },
       { status: 500 }

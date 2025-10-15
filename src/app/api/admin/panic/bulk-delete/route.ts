@@ -1,17 +1,12 @@
-// src/app/api/panic/[id]/status/route.ts
+// src/app/api/admin/panic/bulk-delete/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// POST - Bulk delete panic reports by date range (Admin only)
+export async function POST(request: NextRequest) {
   try {
-    // Await params karena sekarang berupa Promise
-    const { id } = await params;
-    
     const authHeader = request.headers.get("Authorization");
-    
+
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header is required" },
@@ -20,45 +15,40 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const panicId = id;
 
     // Validate required fields
-    if (!body.status) {
+    if (!body.start_date || !body.end_date) {
       return NextResponse.json(
-        { message: "Status is required" },
+        { message: "start_date and end_date are required" },
         { status: 400 }
       );
     }
 
-    // Validate status values
-    const validStatuses = ['handling', 'resolved'];
-    if (!validStatuses.includes(body.status)) {
-      return NextResponse.json(
-        { message: "Invalid status. Must be 'handling' or 'resolved'" },
-        { status: 400 }
-      );
-    }
+    log("Bulk deleting panic reports:", body);
 
-    log(`Updating panic ${panicId} status:`, body);
-
-    const response = await fetch(buildApiUrl(`/panic/${panicId}/status`), {
-      method: "PUT",
+    const apiUrl = buildApiUrl("/admin/panic/bulk-delete");
+    const response = await fetch(apiUrl, {
+      method: "POST",
       headers: {
         "Authorization": authHeader,
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        start_date: body.start_date,
+        end_date: body.end_date,
+        status: body.status,
+      }),
     });
 
     const responseText = await response.text();
-    log(`Update panic ${panicId} status response:`, responseText);
+    log("External API bulk delete panic response:", responseText);
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      logError("Failed to parse response as JSON:", e);
+      logError("Failed to parse bulk delete panic response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -67,9 +57,9 @@ export async function PUT(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    logError("Update panic status error:", error);
+    logError("Bulk delete panic reports error:", error);
     return NextResponse.json(
-      { message: "An error occurred while updating panic status" },
+      { message: "An error occurred while bulk deleting panic reports" },
       { status: 500 }
     );
   }

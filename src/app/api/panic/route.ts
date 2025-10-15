@@ -1,5 +1,6 @@
 // src/app/api/panic/route.ts (Update)
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // POST - Create Panic Report (User)
 export async function POST(request: NextRequest) {
@@ -23,9 +24,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Creating panic report:", body);
-    
-    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/panic", {
+    log("Creating panic report:", body);
+
+    const apiUrl = buildApiUrl("/panic");
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Authorization": authHeader,
@@ -39,13 +41,13 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("External API panic response:", responseText);
-    
+    log("External API panic response:", responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse panic response as JSON:", e);
+      logError("Failed to parse panic response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Panic button error:", error);
+    logError("Panic button error:", error);
     return NextResponse.json(
       { message: "An error occurred while sending panic alert" },
       { status: 500 }
@@ -82,9 +84,9 @@ export async function GET(request: NextRequest) {
     
     // Try multiple endpoints for panic alerts
     const endpoints = [
-      `https://sigap-api-5hk6r.ondigitalocean.app/api/admin/panic`,
-      `https://sigap-api-5hk6r.ondigitalocean.app/api/panic`,
-      `https://sigap-api-5hk6r.ondigitalocean.app/api/panic/all`
+      buildApiUrl("/admin/panic"),
+      buildApiUrl("/panic"),
+      buildApiUrl("/panic/all")
     ];
 
     let lastError = null;
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
         }
 
         const apiUrl = `${baseEndpoint}?${queryParams.toString()}`;
-        console.log("Trying panic endpoint:", apiUrl);
+        log("Trying panic endpoint:", apiUrl);
 
         const response = await fetch(apiUrl, {
           method: "GET",
@@ -115,11 +117,11 @@ export async function GET(request: NextRequest) {
         });
 
         const responseText = await response.text();
-        console.log(`Panic response from ${baseEndpoint}:`, responseText.substring(0, 500));
-        
+        log(`Panic response from ${baseEndpoint}:`, responseText.substring(0, 500));
+
         // Check if response is HTML (error page)
         if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
-          console.log(`Endpoint ${baseEndpoint} returned HTML, trying next...`);
+          log(`Endpoint ${baseEndpoint} returned HTML, trying next...`);
           continue;
         }
 
@@ -127,18 +129,18 @@ export async function GET(request: NextRequest) {
           let data;
           try {
             data = JSON.parse(responseText);
-            console.log(`Successfully parsed panic data from ${baseEndpoint}:`, Object.keys(data));
+            log(`Successfully parsed panic data from ${baseEndpoint}:`, Object.keys(data));
             return NextResponse.json(data, { status: response.status });
           } catch (e) {
-            console.error(`Failed to parse panic JSON from ${baseEndpoint}:`, e);
+            logError(`Failed to parse panic JSON from ${baseEndpoint}:`, e);
             continue;
           }
         } else {
-          console.log(`Panic endpoint ${baseEndpoint} failed with status ${response.status}`);
+          log(`Panic endpoint ${baseEndpoint} failed with status ${response.status}`);
           lastError = responseText;
         }
       } catch (error) {
-        console.log(`Error with panic endpoint ${baseEndpoint}:`, error);
+        log(`Error with panic endpoint ${baseEndpoint}:`, error);
         lastError = error;
       }
     }
@@ -154,7 +156,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error("Get panic reports error:", error);
+    logError("Get panic reports error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching panic reports", data: [] },
       { status: 200 } // Return 200 with empty data instead of 500

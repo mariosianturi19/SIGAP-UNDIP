@@ -1,5 +1,6 @@
 // src/app/api/panic/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 // GET - Get Panic Report by ID
 export async function GET(
@@ -20,8 +21,8 @@ export async function GET(
     }
 
     const panicId = id;
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/panic/${panicId}`, {
+
+    const response = await fetch(buildApiUrl(`/panic/${panicId}`), {
       method: "GET",
       headers: {
         "Authorization": authHeader,
@@ -30,13 +31,13 @@ export async function GET(
     });
 
     const responseText = await response.text();
-    console.log(`Get panic ${panicId} response:`, responseText);
-    
+    log(`Get panic ${panicId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -45,7 +46,7 @@ export async function GET(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Get panic error:", error);
+    logError("Get panic error:", error);
     return NextResponse.json(
       { message: "An error occurred while fetching panic report" },
       { status: 500 }
@@ -82,9 +83,9 @@ export async function PUT(
       );
     }
 
-    console.log(`Updating panic ${panicId} status:`, body);
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/panic/${panicId}`, {
+    log(`Updating panic ${panicId} status:`, body);
+
+    const response = await fetch(buildApiUrl(`/panic/${panicId}`), {
       method: "PUT",
       headers: {
         "Authorization": authHeader,
@@ -95,13 +96,13 @@ export async function PUT(
     });
 
     const responseText = await response.text();
-    console.log(`Update panic ${panicId} response:`, responseText);
-    
+    log(`Update panic ${panicId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -110,7 +111,7 @@ export async function PUT(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Update panic error:", error);
+    logError("Update panic error:", error);
     return NextResponse.json(
       { message: "An error occurred while updating panic report" },
       { status: 500 }
@@ -137,8 +138,8 @@ export async function DELETE(
     }
 
     const panicId = id;
-    
-    const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/panic/${panicId}`, {
+
+    const response = await fetch(buildApiUrl(`/panic/${panicId}`), {
       method: "DELETE",
       headers: {
         "Authorization": authHeader,
@@ -147,13 +148,13 @@ export async function DELETE(
     });
 
     const responseText = await response.text();
-    console.log(`Delete panic ${panicId} response:`, responseText);
-    
+    log(`Delete panic ${panicId} response:`, responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -162,7 +163,7 @@ export async function DELETE(
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Delete panic error:", error);
+    logError("Delete panic error:", error);
     return NextResponse.json(
       { message: "An error occurred while deleting panic report" },
       { status: 500 }

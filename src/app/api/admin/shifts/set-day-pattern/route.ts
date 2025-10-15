@@ -1,5 +1,6 @@
 // src/app/api/admin/shifts/set-day-pattern/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl, log, logError } from "@/lib/apiConfig";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +23,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Setting day pattern:", body);
-    
-    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/admin/shifts/set-day-pattern", {
+    log("Setting day pattern:", body);
+
+    const response = await fetch(buildApiUrl("/admin/shifts/set-day-pattern"), {
       method: "POST",
       headers: {
         "Authorization": authHeader,
@@ -35,13 +36,13 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("Set day pattern response:", responseText);
-    
+    log("Set day pattern response:", responseText);
+
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Failed to parse response as JSON:", e);
+      logError("Failed to parse response as JSON:", e);
       return NextResponse.json(
         { message: "Invalid response from server" },
         { status: 500 }
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Set day pattern error:", error);
+    logError("Set day pattern error:", error);
     return NextResponse.json(
       { message: "An error occurred while setting day pattern" },
       { status: 500 }
