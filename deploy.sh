@@ -1,22 +1,224 @@
+#!/bin/bash
 set -e
 
 # Configuration - Edit Below This
-SERVER_IP="188.166.189.129"
-SERVER_USER="root"
-# REMOVED PASSWORD - Use SSH key authentication instead
-# Setup SSH key: ssh-copy-id root@188.166.189.129
 APP_NAME="sigap-undip-frontend"
 APP_DIR="/var/www/$APP_NAME"
 PORT=3000
 BACKEND_API_URL="https://sigap-api-5hk6r.ondigitalocean.app/api"  # Backend API URL
 
+# SSL Configuration
+DOMAIN=""
+USE_SSL=false
+
 # Dont Edit Below This
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  SIGAP UNDIP - Frontend Deployment                         ║"
+echo "║  SIGAP UNDIP - Server Deployment                           ║"
 echo "║  Next.js Application                                       ║"
 echo "╚════════════════════════════════════════════════════════════ ╝"
 echo ""
+echo "   Configuration:"
+echo "   App Directory: $APP_DIR"
+echo "   Port: $PORT"
+echo "   Backend API: $BACKEND_API_URL"
+echo ""
+
+# Ask about SSL setup
+echo "════════════════════════════════════════════════════════════"
+echo "  Setup SSL/HTTPS?"
+echo "════════════════════════════════════════════════════════════"
+echo ""
+echo "⚠️  PENTING: Untuk akses lokasi GPS, website HARUS HTTPS!"
+echo ""
+echo "Pilihan:"
+echo "1. Ya, setup SSL dengan domain (RECOMMENDED)"
+echo "2. Tidak, deploy tanpa SSL (lokasi GPS tidak akan berfungsi)"
+echo ""
+read -p "Pilih (1/2): " -n 1 -r SSL_CHOICE
+echo ""
+echo ""
+
+if [[ $SSL_CHOICE == "1" ]]; then
+    echo "════════════════════════════════════════════════════════════"
+    echo "  Domain Configuration"
+    echo "════════════════════════════════════════════════════════════"
+    echo ""
+    echo "Untuk SSL, Anda perlu domain. Opsi:"
+    echo "• Domain berbayar (sigapundip.com) - ~100rb/tahun"
+    echo "• Subdomain gratis:"
+    echo "  - DuckDNS (sigapundip.duckdns.org) - GRATIS"
+    echo "  - NoIP (sigapundip.ddns.net) - GRATIS"
+    echo ""
+    read -p "Apakah Anda sudah punya domain? (y/n): " -n 1 -r HAS_DOMAIN
+    echo ""
+    echo ""
+
+    if [[ $HAS_DOMAIN =~ ^[Yy]$ ]]; then
+        read -p "Masukkan domain Anda (contoh: sigapundip.com): " DOMAIN
+        USE_SSL=true
+        echo ""
+        echo "✅ Domain: $DOMAIN"
+        echo ""
+        echo "⚠️  PASTIKAN domain sudah pointing ke IP server ini!"
+        echo ""
+        read -p "Domain sudah pointing? (y/n): " -n 1 -r DOMAIN_READY
+        echo ""
+
+        if [[ ! $DOMAIN_READY =~ ^[Yy]$ ]]; then
+            echo ""
+            echo "❌ Silakan pointing domain dulu ke IP server ini"
+            echo ""
+            echo "Cara pointing domain:"
+            echo "1. Login ke provider domain Anda"
+            echo "2. Buka DNS Management"
+            echo "3. Tambahkan A Record:"
+            echo "   Name: @ (atau kosong)"
+            echo "   Value: [IP_SERVER_INI]"
+            echo "   TTL: 3600"
+            echo "4. Tunggu 5-30 menit untuk propagasi"
+            echo ""
+            exit 1
+        fi
+    else
+        echo ""
+        echo "Untuk mendapatkan domain gratis:"
+        echo ""
+        echo "1. DuckDNS (RECOMMENDED):"
+        echo "   - Buka: https://www.duckdns.org"
+        echo "   - Login dengan Google/GitHub"
+        echo "   - Buat subdomain: sigapundip.duckdns.org"
+        echo "   - Set IP ke IP server ini"
+        echo ""
+        echo "2. NoIP:"
+        echo "   - Buka: https://www.noip.com"
+        echo "   - Buat akun gratis"
+        echo "   - Buat hostname: sigapundip.ddns.net"
+        echo "   - Set IP ke IP server ini"
+        echo ""
+        read -p "Setelah dapat domain, tekan Enter untuk lanjut..."
+        read -p "Masukkan domain yang sudah dibuat: " DOMAIN
+        USE_SSL=true
+        echo ""
+        echo "✅ Domain: $DOMAIN"
+    fi
+fi
+
+echo ""
+read -p "Lanjutkan deployment? (y/n): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Deployment dibatalkan"
+    exit 1
+fi
+
+echo ""
+echo "🔍 Checking current directory..."
+if [ ! -f "package.json" ]; then
+    echo "❌ Error: package.json tidak ditemukan!"
+    echo "   Pastikan Anda menjalankan script ini dari directory project"
+    echo "   atau git clone project ke server terlebih dahulu"
+    exit 1
+fi
+echo "✅ Found package.json in $(pwd)"
+
+echo ""
+echo "📦 Installing dependencies..."
+npm install
+
+echo ""
+echo "🔨 Building application..."
+npm run build
+
+echo "✅ Build completed"
+
+echo ""
+echo "================================================"
+echo " Setting up server environment..."
+echo "================================================"
+
+# Get current user
+CURRENT_USER=$(whoami)
+echo "  Running as user: $CURRENT_USER"
+
+# Install Node.js if not exists
+if ! command -v node &> /dev/null; then
+    echo "  Installing Node.js 20..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+else
+    echo "✅ Node.js already installed: $(node -v)"
+fi
+
+# Install PM2 if not exists
+if ! command -v pm2 &> /dev/null; then
+    echo "  Installing PM2..."
+    npm install -g pm2
+    pm2 startup systemd -u $CURRENT_USER --hp /home/$CURRENT_USER
+else
+    echo "✅ PM2 already installed"
+fi
+
+# Install Nginx if not exists
+if ! command -v nginx &> /dev/null; then
+    echo "  Installing Nginx..."
+    apt-get update
+    apt-get install -y nginx
+else
+    echo "✅ Nginx already installed"
+fi
+
+# Install Certbot if SSL is needed
+if [ "$USE_SSL" = true ]; then
+    if ! command -v certbot &> /dev/null; then
+        echo "  Installing Certbot for SSL..."
+        apt-get update
+        apt-get install -y certbot python3-certbot-nginx
+    else
+        echo "✅ Certbot already installed"
+    fi
+fi
+
+# Setup firewall
+echo "  Configuring firewall..."
+ufw --force enable
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow $PORT/tcp
+
+# Create app directory if not exists
+echo "  Creating application directory..."
+mkdir -p $APP_DIR
+
+# Copy files to app directory if not already there
+if [ "$(pwd)" != "$APP_DIR" ]; then
+    echo "  Copying files to $APP_DIR..."
+    cp -r . $APP_DIR/
+fi
+
+# Go to app directory
+cd $APP_DIR
+
+# Create .env.production
+echo "  Creating environment configuration..."
+cat > .env.production << EOFENV
+# Backend API Configuration
+NEXT_PUBLIC_API_URL=$BACKEND_API_URL
+
+# Application Environment
+
+# Prompt for server credentials
+echo "════════════════════════════════════════════════════════════"
+echo "  Server Configuration"
+echo "════════════════════════════════════════════════════════════"
+echo ""
+read -p "Masukkan username server VM: " SERVER_USER
+echo ""
+read -s -p "Masukkan password server VM: " SERVER_PASSWORD
+echo ""
+echo ""
+
 echo "   Configuration:"
 echo "   Server: $SERVER_USER@$SERVER_IP"
 echo "   App Directory: $APP_DIR"
@@ -124,7 +326,7 @@ fi
 echo "✅ Found package.json in $CURRENT_DIR"
 
 run_remote() {
-    ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "$1"
+    sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "$1"
 }
 
 echo ""
@@ -156,7 +358,7 @@ echo "✅ Archive created"
 
 echo ""
 echo "📤 Uploading code to server..."
-scp -o StrictHostKeyChecking=no "$TEMP_TAR" $SERVER_USER@$SERVER_IP:/tmp/$APP_NAME-upload.tar.gz
+sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no "$TEMP_TAR" $SERVER_USER@$SERVER_IP:/tmp/$APP_NAME-upload.tar.gz
 
 # Remove local temp file
 rm -f "$TEMP_TAR"
@@ -165,7 +367,7 @@ echo "✅ Code uploaded"
 
 echo ""
 echo "Deploying on server..."
-ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << ENDSSH
+sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << ENDSSH
 set -e
 
 echo ""
@@ -180,6 +382,15 @@ if ! command -v node &> /dev/null; then
     apt-get install -y nodejs
 else
     echo "✅ Node.js already installed: \$(node -v)"
+fi
+
+# Install sshpass for password authentication
+if ! command -v sshpass &> /dev/null; then
+    echo "  Installing sshpass..."
+    apt-get update
+    apt-get install -y sshpass
+else
+    echo "✅ sshpass already installed"
 fi
 
 # Install PM2 if not exists
@@ -253,12 +464,72 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seputipy.appspot.com
 
 # Security Configuration
 NEXT_PUBLIC_TOKEN_EXPIRY_WARNING=300
-NEXT_PUBLIC_MAX_FILE_SIZE=10
+NEXT_PUBLIC_MAX_FILE_SIZE=20
 
 # Geolocation Configuration
 NEXT_PUBLIC_LOCATION_TIMEOUT=10000
 NEXT_PUBLIC_LOCATION_MAX_AGE=300000
 NEXT_PUBLIC_LOCATION_MIN_ACCURACY=1000
+EOFENV
+
+# Clean old dependencies and build
+echo "  Cleaning old build..."
+rm -rf node_modules .next
+
+# Install dependencies
+echo "  Installing dependencies..."
+npm install --production=false
+
+# Build application
+echo "  Building Next.js application..."
+npm run build
+
+# Create PM2 ecosystem file
+echo "  Creating PM2 configuration..."
+cat > ecosystem.config.js << EOFPM2
+module.exports = {
+  apps: [{
+    name: '$APP_NAME',
+    script: 'npm',
+    args: 'start',
+    cwd: '$APP_DIR',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: $PORT
+    }
+  }]
+}
+EOFPM2
+
+# Stop existing PM2 process if exists
+pm2 delete $APP_NAME 2>/dev/null || true
+
+# Start with PM2
+echo "  Starting application with PM2..."
+pm2 start ecosystem.config.js
+pm2 save
+
+# Configure Nginx based on SSL choice
+if [ "$USE_SSL" = true ]; then
+    echo ""
+    echo "================================================"
+    echo " Setting up SSL Certificate..."
+    echo "================================================"
+
+    # Stop Nginx temporarily
+    echo "  Stopping Nginx..."
+    systemctl stop nginx
+
+    # Obtain SSL certificate
+    echo "  Obtaining SSL certificate for $DOMAIN..."
+    certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --force-renewal
+
+    # Configure Nginx with SSL
+    echo "  Configuring Nginx with HTTPS..."
 EOFENV
 
 # Clean old dependencies and build
@@ -308,18 +579,18 @@ if [ "$USE_SSL" = true ]; then
     echo "================================================"
     echo " Setting up SSL Certificate..."
     echo "================================================"
-    
+
     # Stop Nginx temporarily
     echo "  Stopping Nginx..."
     systemctl stop nginx
-    
+
     # Obtain SSL certificate
     echo "  Obtaining SSL certificate for $DOMAIN..."
     certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --force-renewal
-    
+
     # Configure Nginx with SSL
     echo "  Configuring Nginx with HTTPS..."
-    cat > /etc/nginx/sites-available/$APP_NAME << 'EOFNGINX'
+    cat > /etc/nginx/sites-available/$APP_NAME << EOFNGINX
 # HTTP - Redirect to HTTPS
 server {
     listen 80;
@@ -335,7 +606,7 @@ server {
     # SSL Certificate
     ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-    
+
     # SSL Configuration
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
@@ -360,7 +631,7 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
-        
+
         # Timeout settings
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -380,7 +651,7 @@ server {
         proxy_set_header Host \$host;
     }
 
-    client_max_body_size 10M;
+    client_max_body_size 20M;
 }
 EOFNGINX
 
@@ -388,14 +659,15 @@ EOFNGINX
     echo "  Setting up SSL auto-renewal..."
     systemctl enable certbot.timer
     systemctl start certbot.timer
-    
+
 else
     # Configure Nginx without SSL (HTTP only)
     echo "  Configuring Nginx (HTTP only - no SSL)..."
-    cat > /etc/nginx/sites-available/$APP_NAME << 'EOFNGINX'
+    SERVER_IP=\$(curl -s ifconfig.me)
+    cat > /etc/nginx/sites-available/$APP_NAME << EOFNGINX
 server {
     listen 80;
-    server_name $SERVER_IP;
+    server_name \$SERVER_IP;
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -412,7 +684,7 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
-        
+
         # Timeout settings
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -432,7 +704,7 @@ server {
         proxy_set_header Host \$host;
     }
 
-    client_max_body_size 10M;
+    client_max_body_size 20M;
 }
 EOFNGINX
 fi
@@ -451,39 +723,31 @@ echo ""
 echo "================================================"
 echo "  Deployment Completed Successfully!"
 echo "================================================"
-echo ""
-echo "  Application Status:"
-pm2 status
-echo ""
+
+# Get server IP for display
+SERVER_IP=\$(curl -s ifconfig.me)
 
 if [ "$USE_SSL" = true ]; then
-    echo "  🔒 SSL enabled - Access your application:"
-    echo "   https://$DOMAIN"
-    echo ""
-    echo "  ✅ Geolocation akan berfungsi di HTTPS"
+    echo "✅ Website deployed at: https://$DOMAIN"
+    echo "🔒 SSL Certificate: Active"
 else
-    echo "  ⚠️  HTTP only - Access your application:"
-    echo "   http://$SERVER_IP"
-    echo ""
-    echo "  ❌ Geolocation TIDAK akan berfungsi tanpa HTTPS"
-    echo "  Jalankan ulang script dan pilih setup SSL"
+    echo "✅ Website deployed at: http://\$SERVER_IP"
+    echo "⚠️  SSL Certificate: Not configured (GPS location may not work)"
 fi
 
 echo ""
-echo "  Useful Commands:"
-echo "   View logs:     pm2 logs $APP_NAME"
-echo "   Restart:       pm2 restart $APP_NAME"
-echo "   Stop:          pm2 stop $APP_NAME"
-echo "   Status:        pm2 status"
+echo "📊 Application Status:"
+echo "   PM2 Process: \$APP_NAME"
+echo "   Port: $PORT"
+echo "   Directory: $APP_DIR"
 echo ""
-
-ENDSSH
-
+echo "🔧 Useful Commands:"
+echo "   Check status: pm2 status"
+echo "   View logs: pm2 logs $APP_NAME"
+echo "   Restart app: pm2 restart $APP_NAME"
+echo "   Reload Nginx: systemctl reload nginx"
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║     DEPLOYMENT SELESAI!                                    ║"
-echo "╚════════════════════════════════════════════════════════════╝"
-echo ""
+echo "🎉 Deployment selesai! SIGAP UNDIP siap digunakan."
 
 if [ "$USE_SSL" = true ]; then
     echo "  🔒 Aplikasi bisa diakses di:"
