@@ -123,16 +123,6 @@ fi
 echo "✅ Found package.json in $(pwd)"
 
 echo ""
-echo "📦 Installing dependencies..."
-npm install
-
-echo ""
-echo "🔨 Building application..."
-npm run build
-
-echo "✅ Build completed"
-
-echo ""
 echo "================================================"
 echo " Setting up server environment..."
 echo "================================================"
@@ -158,6 +148,16 @@ if ! command -v pm2 &> /dev/null; then
 else
     echo "✅ PM2 already installed"
 fi
+
+echo ""
+echo "📦 Installing dependencies..."
+npm install
+
+echo ""
+echo "🔨 Building application..."
+npm run build
+
+echo "✅ Build completed"
 
 # Install Nginx if not exists
 if ! command -v nginx &> /dev/null; then
