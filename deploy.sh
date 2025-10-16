@@ -747,7 +747,43 @@ echo "   View logs: pm2 logs $APP_NAME"
 echo "   Restart app: pm2 restart $APP_NAME"
 echo "   Reload Nginx: systemctl reload nginx"
 echo ""
-echo "🎉 Deployment selesai! SIGAP UNDIP siap digunakan."
+echo ""
+echo "� Access Information:"
+
+if [ "$USE_SSL" = true ]; then
+    echo "  🔒 Application accessible at:"
+    echo "   https://$DOMAIN"
+    echo ""
+    echo "  ✅ SSL Certificate: Active"
+    echo "  ✅ Geolocation will work"
+else
+    echo "  Application accessible at:"
+    echo "   http://$SERVER_IP"
+    echo ""
+    echo "  ⚠️  WARNING: Geolocation will not work without HTTPS!"
+    echo "  To enable geolocation, get a domain and run:"
+    echo "   ./deploy.sh (choose SSL setup)"
+fi
+
+echo ""
+echo "📊 Application Status:"
+echo "   PM2 Process: $APP_NAME"
+echo "   Port: $PORT"
+echo "   Directory: $APP_DIR"
+echo ""
+echo "🔧 Useful Commands:"
+echo "   Check status: ssh $SERVER_USER@$SERVER_IP 'pm2 status'"
+echo "   View logs: ssh $SERVER_USER@$SERVER_IP 'pm2 logs $APP_NAME'"
+echo "   Restart: ssh $SERVER_USER@$SERVER_IP 'pm2 restart $APP_NAME'"
+echo ""
+echo "🎉 Deployment completed! SIGAP UNDIP is ready to use."
+echo "   Reload Nginx: systemctl reload nginx"
+ENDSSH
+
+echo ""
+echo "✅ Deployment completed successfully!"
+echo ""
+echo "🌐 Access Information:""
 
 if [ "$USE_SSL" = true ]; then
     echo "  🔒 Aplikasi bisa diakses di:"
