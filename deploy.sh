@@ -5,7 +5,7 @@ set -e
 APP_NAME="sigap-undip-frontend"
 APP_DIR="/var/www/$APP_NAME"
 PORT=3000
-BACKEND_API_URL="https://sigap-api-5hk6r.ondigitalocean.app/api"  # Backend API URL
+BACKEND_API_URL="http://68.183.234.236"  # Backend API URL
 
 # SSL Configuration
 DOMAIN=""
@@ -725,7 +725,7 @@ echo "  Deployment Completed Successfully!"
 echo "================================================"
 
 # Get server IP for display
-SERVER_IP=\$(curl -s ifconfig.me)
+SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "localhost")
 
 if [ "$USE_SSL" = true ]; then
     echo "✅ Website deployed at: https://$DOMAIN"
