@@ -199,7 +199,7 @@ export default function LoginPage() {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between mb-1">
-                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700">Password</FormLabel>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-700">Kata Sandi</FormLabel>
                         <Link
                           href="/auth/forgot-password"
                           className="text-xs text-red-600 hover:text-red-700 dark:text-red-600 dark:hover:text-red-700 font-medium transition-colors"
@@ -216,7 +216,7 @@ export default function LoginPage() {
                         <FormControl>
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
+                            placeholder="Masukkan kata sandi"
                             className="pl-10 pr-10 border-0 shadow-gray-400 bg-white dark:bg-white text-gray-900 dark:text-gray-900 placeholder-gray-500 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-white transition-all duration-200"
                             {...field}
                             disabled={isLoading}

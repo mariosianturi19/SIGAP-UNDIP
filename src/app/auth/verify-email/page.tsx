@@ -375,7 +375,7 @@ function VerifyEmailForm() {
                   {/* Info Box */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm text-blue-800">
-                      <span className="font-semibold">💡 Tips:</span> Cek folder spam/junk jika email tidak masuk dalam 1-2 menit.
+                      <span className="font-semibold"></span> Cek folder spam/junk jika email tidak masuk dalam 1-2 menit.
                     </p>
                   </div>
                 </>
