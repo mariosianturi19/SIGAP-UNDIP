@@ -663,11 +663,11 @@ EOFNGINX
 else
     # Configure Nginx without SSL (HTTP only)
     echo "  Configuring Nginx (HTTP only - no SSL)..."
-    SERVER_IP=\$(curl -s ifconfig.me)
+    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "localhost")
     cat > /etc/nginx/sites-available/$APP_NAME << EOFNGINX
 server {
     listen 80;
-    server_name \$SERVER_IP;
+    server_name $SERVER_IP;
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
