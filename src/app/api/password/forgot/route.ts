@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/password/forgot", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
+      const response = await fetch(`${apiUrl}api/password/forgot`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

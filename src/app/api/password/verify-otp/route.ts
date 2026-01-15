@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
 
     console.log("Verifying OTP for:", body.email);
     
-    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/password/verify-otp", {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
+    const response = await fetch(`${apiUrl}api/password/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
