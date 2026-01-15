@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward the request to the external API
-    const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/register", {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
+    const response = await fetch(`${apiUrl}api/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
