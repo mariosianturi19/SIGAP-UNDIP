@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
 
     try {
-      const response = await fetch(`${API_BASE_URL}/email/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}api/email/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
