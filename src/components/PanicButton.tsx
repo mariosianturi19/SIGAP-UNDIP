@@ -126,6 +126,34 @@ const PanicButton: React.FC = () => {
         }),
       });
 
+      // Check if response is ok first
+      if (!response.ok) {
+        const responseText = await response.text();
+        let errorMessage = "Gagal mengirim peringatan darurat";
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorMessage;
+          
+          // If there's technical info, log it
+          if (errorData.technical) {
+            console.error("Technical error:", errorData.technical);
+          }
+        } catch (e) {
+          // If can't parse JSON, use text as error
+          console.error("Failed to parse error response:", responseText);
+          
+          // Check for specific error patterns
+          if (responseText.includes("Server Error")) {
+            errorMessage = "Server backend sedang mengalami masalah. Silakan coba lagi dalam beberapa saat.";
+          } else {
+            errorMessage = responseText || errorMessage;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
       const responseText = await response.text();
       
       let result;
@@ -133,11 +161,8 @@ const PanicButton: React.FC = () => {
         result = JSON.parse(responseText);
       } catch (e) {
         console.error("Failed to parse response:", e);
+        console.error("Response text:", responseText);
         throw new Error("Invalid response from server");
-      }
-
-      if (!response.ok) {
-        throw new Error(result.message || "Gagal mengirim peringatan darurat");
       }
 
       console.log("Panic alert sent successfully:", result);
@@ -165,10 +190,15 @@ const PanicButton: React.FC = () => {
         toast.error("Sesi Anda telah berakhir", {
           description: "Silakan masuk lagi untuk melanjutkan.",
         });
-        // Note: We can't use router here, so we'll just show the error
+      } else if (error instanceof Error && error.message.includes("Server backend sedang mengalami masalah")) {
+        toast.error("Server Sedang Bermasalah", {
+          description: "Backend API sedang mengalami masalah teknis. Tim teknis telah diberitahu. Silakan hubungi 112 atau security kampus langsung untuk keadaan darurat.",
+          duration: 10000,
+        });
       } else {
         toast.error("Gagal mengirim peringatan darurat", {
-          description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga"
+          description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga. Untuk keadaan darurat, segera hubungi 112 atau security kampus.",
+          duration: 8000,
         });
       }
     } finally {
@@ -186,7 +216,12 @@ const PanicButton: React.FC = () => {
       clearTimeout(confirmTimeoutRef.current);
     }
     
-    await sendPanicAlert();
+    try {
+      await sendPanicAlert();
+    } catch (error) {
+      // Error already handled in sendPanicAlert, but catch here to prevent unhandled promise rejection
+      console.error("Error in handleAcceptTerms:", error);
+    }
   }, [sendPanicAlert]);
 
   const handleCloseTermsModal = useCallback((): void => {

@@ -58,7 +58,7 @@ export default function DeleteVolunteerDialog({
       }
 
       // Gunakan endpoint API yang diperbarui untuk menghapus pengguna
-      const response = await fetch(`https://sigap-api-5hk6r.ondigitalocean.app/api/admin/relawan/${volunteer.id}`, {
+      const response = await fetch(`/api/volunteer/${volunteer.id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`,

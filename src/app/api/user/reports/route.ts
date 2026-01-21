@@ -159,3 +159,131 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// POST - Create New Report (User)
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("Authorization");
+    
+    if (!authHeader) {
+      log("Missing authorization header");
+      return NextResponse.json(
+        { message: "Authorization header is required" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.photo_path || !body.location || !body.problem_type || !body.description) {
+      log("Missing required fields");
+      return NextResponse.json(
+        { message: "photo_path, location, problem_type, and description are required" },
+        { status: 400 }
+      );
+    }
+
+    log("Creating report:", {
+      photo_path: body.photo_path,
+      location: body.location.substring(0, 50),
+      problem_type: body.problem_type,
+      description_length: body.description.length
+    });
+
+    const apiUrl = buildApiUrl("/reports");
+    log("Sending report to:", apiUrl);
+
+    const requestBody = {
+      photo_path: body.photo_path,
+      location: body.location,
+      problem_type: body.problem_type,
+      description: body.description
+    };
+    
+    log("Request body:", JSON.stringify(requestBody));
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseText = await response.text();
+    log("External API report response status:", response.status);
+    log("External API report response body:", responseText.substring(0, 500));
+
+    if (!response.ok) {
+      let errorMessage = "Failed to create report";
+      let errorDetails = responseText;
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        logError("Failed to parse error response:", e);
+      }
+      
+      logError("Backend API error:", {
+        status: response.status,
+        message: errorMessage,
+        details: errorDetails
+      });
+      
+      // Return specific error messages
+      if (response.status === 401) {
+        return NextResponse.json(
+          { message: "Token autentikasi tidak valid atau telah kadaluarsa" },
+          { status: 401 }
+        );
+      } else if (response.status === 422) {
+        return NextResponse.json(
+          { message: "Data laporan tidak valid. Periksa kembali informasi yang diisi." },
+          { status: 422 }
+        );
+      } else if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            message: "Server backend sedang mengalami masalah saat membuat laporan",
+            technical: errorMessage 
+          },
+          { status: 500 }
+        );
+      }
+      
+      return NextResponse.json(
+        { message: errorMessage },
+        { status: response.status }
+      );
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      logError("Failed to parse report response as JSON:", e);
+      logError("Response text:", responseText);
+      return NextResponse.json(
+        { message: "Invalid response from server", details: responseText.substring(0, 200) },
+        { status: 500 }
+      );
+    }
+
+    log("Report created successfully:", data);
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    logError("Create report error:", error);
+    return NextResponse.json(
+      { 
+        message: "An error occurred while creating report",
+        error: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    );
+  }
+}

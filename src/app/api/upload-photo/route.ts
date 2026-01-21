@@ -45,7 +45,68 @@ export async function POST(request: NextRequest) {
 
     // Ambil response sebagai text untuk debugging
     const responseText = await response.text();
-    log("External API upload photo response:", responseText);
+    log("External API upload photo response status:", response.status);
+    log("External API upload photo response body:", responseText.substring(0, 500));
+
+    // Check response status first
+    if (!response.ok) {
+      let errorMessage = "Failed to upload photo";
+      let errorDetails = responseText;
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        logError("Failed to parse error response:", e);
+      }
+      
+      logError("Backend API upload photo error:", {
+        status: response.status,
+        message: errorMessage,
+        details: errorDetails
+      });
+      
+      // Return specific error messages
+      if (response.status === 401) {
+        return NextResponse.json(
+          { message: "Token autentikasi tidak valid atau telah kadaluarsa" },
+          { status: 401 }
+        );
+      } else if (response.status === 413) {
+        return NextResponse.json(
+          { message: "File terlalu besar untuk diupload" },
+          { status: 413 }
+        );
+      } else if (response.status === 422) {
+        return NextResponse.json(
+          { message: "File tidak valid atau format tidak didukung" },
+          { status: 422 }
+        );
+      } else if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            message: "Server backend sedang mengalami masalah saat upload foto",
+            technical: errorMessage 
+          },
+          { status: 500 }
+        );
+      } else if (response.status === 503) {
+        return NextResponse.json(
+          { 
+            message: "Service upload foto sementara tidak tersedia",
+            technical: errorMessage,
+            suggestion: "Silakan coba lagi dalam beberapa saat atau hubungi administrator"
+          },
+          { status: 503 }
+        );
+      }
+      
+      return NextResponse.json(
+        { message: errorMessage, technical: errorDetails },
+        { status: response.status }
+      );
+    }
 
     // Parse sebagai JSON
     let data;
@@ -53,18 +114,23 @@ export async function POST(request: NextRequest) {
       data = JSON.parse(responseText);
     } catch (e) {
       logError("Failed to parse upload photo response as JSON:", e);
+      logError("Response text:", responseText);
       return NextResponse.json(
-        { message: "Invalid response from server" },
+        { message: "Invalid response from server", details: responseText.substring(0, 200) },
         { status: 500 }
       );
     }
 
+    log("Photo uploaded successfully:", data);
     // Kembalikan response dengan status yang sama
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     logError("Photo upload error:", error);
     return NextResponse.json(
-      { message: "An error occurred during photo upload" },
+      { 
+        message: "An error occurred during photo upload",
+        error: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

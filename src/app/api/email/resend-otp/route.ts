@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
+import { buildApiUrl } from "@/lib/apiConfig";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +22,8 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
 
     try {
-      const response = await fetch(`${API_BASE_URL}api/email/resend-otp`, {
+      const apiUrl = buildApiUrl("/email/resend-otp");
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

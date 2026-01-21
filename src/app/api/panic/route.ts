@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("Authorization");
     
     if (!authHeader) {
+      log("Missing authorization header");
       return NextResponse.json(
         { message: "Authorization header is required" },
         { status: 401 }
@@ -18,15 +19,27 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!body.latitude || !body.longitude) {
+      log("Missing latitude or longitude");
       return NextResponse.json(
         { message: "Latitude and longitude are required" },
         { status: 400 }
       );
     }
 
-    log("Creating panic report:", body);
+    log("Creating panic report:", { latitude: body.latitude, longitude: body.longitude });
 
     const apiUrl = buildApiUrl("/panic");
+    log("Sending panic alert to:", apiUrl);
+
+    // Convert latitude and longitude to proper types (float/double)
+    const requestBody = {
+      latitude: parseFloat(body.latitude),
+      longitude: parseFloat(body.longitude),
+    };
+    
+    log("Request body:", JSON.stringify(requestBody));
+    log("Authorization header (first 30 chars):", authHeader.substring(0, 30) + "...");
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -34,31 +47,74 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: JSON.stringify({
-        latitude: body.latitude,
-        longitude: body.longitude
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const responseText = await response.text();
-    log("External API panic response:", responseText);
+    log("External API panic response status:", response.status);
+    log("External API panic response body:", responseText.substring(0, 500));
+
+    if (!response.ok) {
+      let errorMessage = "Failed to send panic alert";
+      let errorDetails = responseText;
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        logError("Failed to parse error response:", e);
+      }
+      
+      logError("Backend API error:", {
+        status: response.status,
+        message: errorMessage,
+        details: errorDetails
+      });
+      
+      // Berikan pesan yang lebih spesifik berdasarkan status code
+      if (response.status === 401) {
+        return NextResponse.json(
+          { message: "Token autentikasi tidak valid atau telah kadaluarsa" },
+          { status: 401 }
+        );
+      } else if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            message: "Server backend sedang mengalami masalah. Silakan coba lagi dalam beberapa saat.",
+            technical: errorMessage 
+          },
+          { status: 500 }
+        );
+      }
+      
+      return NextResponse.json(
+        { message: errorMessage },
+        { status: response.status }
+      );
+    }
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
       logError("Failed to parse panic response as JSON:", e);
+      logError("Response text:", responseText);
       return NextResponse.json(
-        { message: "Invalid response from server" },
+        { message: "Invalid response from server", details: responseText.substring(0, 200) },
         { status: 500 }
       );
     }
 
+    log("Panic alert created successfully:", data);
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     logError("Panic button error:", error);
     return NextResponse.json(
-      { message: "An error occurred while sending panic alert" },
+      { 
+        message: "An error occurred while sending panic alert",
+        error: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

@@ -27,7 +27,6 @@ import { isAuthenticated, getAccessToken } from "@/lib/auth";
 import StudentWrapper from '@/components/shared/StudentWrapper';
 import Image from "next/image";
 
-// Opsi jenis masalah
 const reportTypeOptions = [
   { value: "electrical", label: "Masalah Listrik" },
   { value: "tree", label: "Bahaya Pohon" },
@@ -255,23 +254,30 @@ export default function ReportPhotoPage() {
         const errorText = await photoResponse.text();
         console.error("Photo upload error response:", errorText);
         
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: "Gagal mengunggah foto" };
+        }
+        
+        // Specific error handling based on status code
         if (photoResponse.status === 401) {
           throw new Error("Sesi telah berakhir. Silakan login ulang.");
         } else if (photoResponse.status === 413) {
           throw new Error("File terlalu besar untuk diupload.");
         } else if (photoResponse.status === 422) {
           throw new Error("File tidak valid atau format tidak didukung.");
+        } else if (photoResponse.status === 503) {
+          // Backend service unavailable
+          throw new Error(errorData.message || "Service upload foto sementara tidak tersedia. Silakan coba lagi dalam beberapa saat.");
+        } else if (photoResponse.status === 500) {
+          // Backend internal error
+          throw new Error(errorData.message || "Server backend sedang mengalami masalah saat upload foto.");
         }
         
-        let errorMessage = "Gagal mengunggah foto";
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = `Gagal mengunggah foto (Error ${photoResponse.status})`;
-        }
-        
-        throw new Error(errorMessage);
+        // Generic error
+        throw new Error(errorData.message || `Gagal mengunggah foto (Error ${photoResponse.status})`);
       }
       
       const photoData = await photoResponse.json();
@@ -293,8 +299,8 @@ export default function ReportPhotoPage() {
       
       console.log("Report data:", reportData);
       
-      // Gunakan endpoint yang benar - sesuaikan dengan API yang ada
-      const reportResponse = await fetch('https://sigap-api-5hk6r.ondigitalocean.app/api/reports', {
+      // Gunakan API route proxy untuk konsistensi
+      const reportResponse = await fetch('/api/user/reports', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -348,9 +354,26 @@ export default function ReportPhotoPage() {
           description: "Silakan masuk lagi untuk melanjutkan.",
         });
         router.push("/auth/login");
+      } else if (error instanceof Error && (
+        error.message.includes("Service upload foto sementara tidak tersedia") ||
+        error.message.includes("service temporarily unavailable")
+      )) {
+        toast.error("Service Tidak Tersedia", {
+          description: "Backend API sementara tidak dapat diakses. Silakan coba lagi dalam beberapa saat atau hubungi administrator.",
+          duration: 8000,
+        });
+      } else if (error instanceof Error && (
+        error.message.includes("Server backend sedang mengalami masalah") ||
+        error.message.includes("Server Error")
+      )) {
+        toast.error("Server Sedang Bermasalah", {
+          description: "Backend API sedang mengalami masalah teknis. Silakan coba lagi dalam beberapa saat atau hubungi admin.",
+          duration: 8000,
+        });
       } else {
         toast.error("Gagal mengirim laporan", {
-          description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga",
+          description: error instanceof Error ? error.message : "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+          duration: 6000,
         });
       }
     } finally {

@@ -1,5 +1,6 @@
 // src/app/api/password/resend-otp/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl } from "@/lib/apiConfig";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +21,8 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
-      const response = await fetch(`${apiUrl}api/password/resend-otp`, {
+      const apiUrl = buildApiUrl("/password/resend-otp");
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -129,13 +129,13 @@ const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     console.log('🔧 API Configuration:', {
       envValue: apiUrl,
-      willUse: apiUrl || 'https://sigap-api-5hk6r.ondigitalocean.app'
+      willUse: apiUrl || 'https://sigap-undip-api-bda67d2f2eb2.herokuapp.com'
     });
   }
 
   if (!apiUrl) {
     console.warn('⚠️ NEXT_PUBLIC_API_URL is not defined, using fallback URL');
-    return 'https://sigap-api-5hk6r.ondigitalocean.app';
+    return 'https://sigap-undip-api-bda67d2f2eb2.herokuapp.com';
   }
 
   // Remove trailing slash if present

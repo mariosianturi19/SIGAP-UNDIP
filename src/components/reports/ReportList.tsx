@@ -53,7 +53,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
 import BulkDeleteDialog, { BulkDeleteFilters } from "@/components/admin/BulkDeleteDialog";
 import { bulkDeleteReports } from "@/lib/deleteApi";
 
@@ -148,7 +147,7 @@ export default function ReportList() {
        return;
      }
 
-     const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/reports", {
+     const response = await fetch("/api/reports", {
        method: "GET",
        headers: {
          "Authorization": `Bearer ${token}`,
@@ -1036,12 +1035,18 @@ export default function ReportList() {
                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Bukti Foto</h3>
                    <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-600 overflow-hidden">
                      {selectedReport.photo_url ? (
-                       <Image
+                       <img
                          src={selectedReport.photo_url}
                          alt={`Laporan #${selectedReport.id}`}
-                         width={800}
-                         height={300}
                          className="w-full object-contain max-h-[300px]"
+                         onError={(e) => {
+                           const target = e.target as HTMLImageElement;
+                           target.style.display = 'none';
+                           const parent = target.parentElement;
+                           if (parent) {
+                             parent.innerHTML = '<div class="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500"><div class="text-center"><svg class="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p class="text-sm">Gambar tidak dapat dimuat</p></div></div>';
+                           }
+                         }}
                        />
                      ) : (
                        <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500">

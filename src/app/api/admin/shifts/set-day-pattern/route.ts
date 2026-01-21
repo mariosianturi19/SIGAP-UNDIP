@@ -36,15 +36,61 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    log("Set day pattern response:", responseText);
+    log("Set day pattern response status:", response.status);
+    log("Set day pattern response body:", responseText.substring(0, 500));
+
+    if (!response.ok) {
+      let errorMessage = "Failed to set day pattern";
+      let errorDetails = responseText;
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        logError("Failed to parse error response:", e);
+      }
+      
+      logError("Backend API error:", {
+        status: response.status,
+        message: errorMessage,
+        details: errorDetails
+      });
+      
+      if (response.status === 401) {
+        return NextResponse.json(
+          { message: "Token autentikasi tidak valid atau telah kadaluarsa" },
+          { status: 401 }
+        );
+      } else if (response.status === 422) {
+        return NextResponse.json(
+          { message: "Data tidak valid. Periksa kembali informasi yang diisi." },
+          { status: 422 }
+        );
+      } else if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            message: "Server backend sedang mengalami masalah",
+            technical: errorMessage 
+          },
+          { status: 500 }
+        );
+      }
+      
+      return NextResponse.json(
+        { message: errorMessage },
+        { status: response.status }
+      );
+    }
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
       logError("Failed to parse response as JSON:", e);
+      logError("Response text:", responseText);
       return NextResponse.json(
-        { message: "Invalid response from server" },
+        { message: "Invalid response from server", details: responseText.substring(0, 200) },
         { status: 500 }
       );
     }

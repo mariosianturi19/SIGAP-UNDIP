@@ -1,5 +1,6 @@
 // src/app/api/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl } from "@/lib/apiConfig";
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,8 +8,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward the request to the external API
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
-    const response = await fetch(`${apiUrl}api/register`, {
+    const apiUrl = buildApiUrl("/register");
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

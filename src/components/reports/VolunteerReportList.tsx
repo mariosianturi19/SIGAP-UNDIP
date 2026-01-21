@@ -40,7 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
 
 // Definisikan interface untuk laporan dan pengguna
 interface ReportUser {
@@ -131,7 +130,7 @@ export default function VolunteerReportList() {
         return;
       }
 
-      const response = await fetch("https://sigap-api-5hk6r.ondigitalocean.app/api/reports", {
+      const response = await fetch("/api/volunteer/reports", {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -976,12 +975,18 @@ export default function VolunteerReportList() {
                      <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Bukti Foto</h3>
                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                        {selectedReport.photo_url ? (
-                         <Image
+                         <img
                            src={selectedReport.photo_url}
                            alt={`Laporan #${selectedReport.id}`}
-                           width={800}
-                           height={300}
                            className="w-full object-contain max-h-[300px] sm:max-h-[400px]"
+                           onError={(e) => {
+                             const target = e.target as HTMLImageElement;
+                             target.style.display = 'none';
+                             const parent = target.parentElement;
+                             if (parent) {
+                               parent.innerHTML = '<div class="flex items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"><p>Gambar tidak dapat dimuat</p></div>';
+                             }
+                           }}
                          />
                        ) : (
                          <div className="flex items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">

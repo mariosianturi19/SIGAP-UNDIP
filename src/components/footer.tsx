@@ -78,7 +78,7 @@ export default function Footer() {
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                   <div className="space-y-2 text-sm">
                     <div className="grid grid-cols-1 gap-2">
-                      <p><strong>Mario</strong> - Teknik Komputer 2022</p>
+                      <p><strong>Mario Sianturi</strong> - Teknik Komputer 2022</p>
                       <p><strong>Dzikri</strong> - Teknik Komputer 2022</p>
                       <p><strong>Parulian</strong> - Teknik Komputer 2022</p>
                       <p><strong>Bravely</strong> - Teknik Komputer 2022</p>

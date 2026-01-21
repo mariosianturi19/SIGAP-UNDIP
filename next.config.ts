@@ -4,7 +4,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ['firebasestorage.googleapis.com', 'sigap-api-5hk6r.ondigitalocean.app'],
+    domains: [
+      'firebasestorage.googleapis.com', 
+      'sigap-api-5hk6r.ondigitalocean.app',
+      'sigap-undip-api-bda67d2f2eb2.herokuapp.com'
+    ],
   },
 
   // Environment variables validation

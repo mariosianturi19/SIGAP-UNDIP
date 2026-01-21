@@ -1,5 +1,6 @@
 // src/app/api/password/forgot/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildApiUrl } from "@/lib/apiConfig";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +21,8 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sigap-undip-api-bda67d2f2eb2.herokuapp.com/";
-      const response = await fetch(`${apiUrl}api/password/forgot`, {
+      const apiUrl = buildApiUrl("/password/forgot");
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
