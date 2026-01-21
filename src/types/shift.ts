@@ -66,11 +66,8 @@ export interface DayPattern {
 }
 
 export interface WeeklyPatternsResponse {
-  message: string;
-  [x: string]: any;
-  [x: string]: any;
-  message: any;
   success: boolean;
+  message: string;
   weekly_patterns: {
     monday: DayPattern;
     tuesday: DayPattern;

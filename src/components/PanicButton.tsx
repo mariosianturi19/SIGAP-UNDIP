@@ -139,7 +139,7 @@ const PanicButton: React.FC = () => {
           if (errorData.technical) {
             console.error("Technical error:", errorData.technical);
           }
-        } catch (e) {
+        } catch {
           // If can't parse JSON, use text as error
           console.error("Failed to parse error response:", responseText);
           

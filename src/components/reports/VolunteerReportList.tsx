@@ -975,6 +975,7 @@ export default function VolunteerReportList() {
                      <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Bukti Foto</h3>
                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                        {selectedReport.photo_url ? (
+                         // eslint-disable-next-line @next/next/no-img-element
                          <img
                            src={selectedReport.photo_url}
                            alt={`Laporan #${selectedReport.id}`}

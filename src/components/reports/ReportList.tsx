@@ -1035,6 +1035,7 @@ export default function ReportList() {
                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Bukti Foto</h3>
                    <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-600 overflow-hidden">
                      {selectedReport.photo_url ? (
+                       // eslint-disable-next-line @next/next/no-img-element
                        <img
                          src={selectedReport.photo_url}
                          alt={`Laporan #${selectedReport.id}`}
